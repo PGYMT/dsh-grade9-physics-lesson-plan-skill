@@ -1,8 +1,8 @@
 # dsh-grade9-physics-lesson-plan-skill
 
-> 版本：v8.2.0
+> 版本：v8.3.0
 
-九年级物理教案生成 Skill，基于希沃白板 `.enbx` 或类似课件生成/修改教案。本仓库是技能文件的独立镜像（`SKILL.md` + `references/01–05` + 本说明）。
+九年级物理教案生成 Skill，基于希沃白板 `.enbx` 或类似课件生成/修改教案。本仓库是技能文件的**权威源**（`SKILL.md` + `references/01–05` + 本说明）；运行入口 `~/.dsh/skills/generate-9th-grade-physics-lesson-plan` 是指向本仓库本地克隆的软链。
 
 ## 功能特点
 
@@ -21,7 +21,7 @@
 
 ## 使用方法
 
-1. 把本仓库内容放入支持 Skill 的 Agent 环境：用户级 `/root/.dsh/skills/generate-9th-grade-physics-lesson-plan/` 或项目级 `.agents/skills/generate-9th-grade-physics-lesson-plan/`。
+1. 克隆到 `/root/skill-repos/g9-physics`，再用整理技能的 `scripts/skill_link.py link` 把 `~/.dsh/skills/generate-9th-grade-physics-lesson-plan` 建成指向它的软链（不要再放项目级副本，项目级会抢优先级）。
 2. 向 Agent 提供 `.enbx` 课件路径或说明课时信息。
 3. Agent 加载 `SKILL.md`（入口），按其索引按需读取 `references/`，默认输出详案 Word + Markdown。
 
@@ -39,8 +39,17 @@
 └── README.md                   # 本说明
 ```
 
+## 维护
+
+- 只改本仓库；改前备份到 `references/历史版本/`，改后跑：
+  - `python3 /root/.dsh/skills/auto-organize-work-files/scripts/skill_link.py verify`
+  - `python3 /root/.dsh/skills/auto-organize-work-files/scripts/sync_checklist.py --apply`
+  - 重新生成工作区生成物：`python3 "/root/dsh-workspace/工作文件/06-工具与提示词/教程/build_lesson_prompt.py"`
+- 详细流程见 `references/04-技能维护规范.md`；与整理技能的分工见其中的第 5 节。
+
 ## 版本记录
 
+- v8.3.0：写文件前先声明目的地（`plan --dest`）；新增与整理技能共用的联动判断清单及本地备份；权威源搬到独立仓库并改软链入口（移除 DSH 仓库旧副本）；修正失效的整理脚本命令；自检清单增至 17 条。
 - v8.2.0：备课调研明确为必做，新增“先查本地存档 / 落地保存原件或正文快照 / 跳过须注明原因”；版本号三处统一（SKILL.md frontmatter、SKILL.md 正文首行、01–05 文件头），生成物版本由脚本从 SKILL.md 读取；修正交叉引用与维护规范（工作区资源目录、校验项、脚本登记）。
 - v8.1.0：教学目标按核心素养四维度分写、科学思维按四要素；重难点精简为“重点 1 条＋难点 ≤2 条”；新增教学语言反重复红线；学生用件必须写进教学准备；取消“课件问题补白”“板书时机”汇总节；板书重做为 2 块、每块 ≤8 行/≤14 字、下划线留空、docx 插 PNG 成品图、〔板书｜…〕标红；新增 build_board_png.py 与教案docx生成脚本-v9.py。
 - v8.0.0：新增备课调研（优秀教案/课件，五维度借鉴清单）、.enbx 动画脚本还原、小黑板板书卡、教学旁批标注体系、05 资源网站索引、extract_enbx.py。
