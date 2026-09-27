@@ -1,12 +1,12 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 8.3.2
+version: 8.4.0
 description: Use when the user asks to generate or revise a Grade 9 physics lesson plan from a Seewo EasiNote .enbx or similar whiteboard courseware, or references the saved 教案生成要求/通用版教案生成要求. Defaults to 40 minutes per period, confirms the number of periods, outputs only the 详案/逐字稿 (a full Markdown working copy and a clean Word teaching copy), and covers new-lesson and practice/review-lesson structures. It researches excellent lesson plans and courseware first, unpacks .enbx animations and images, writes board design as a finished two-board picture in five parallel knowledge blocks (keywords only, underline blanks instead of boxes, no safety icons), prints board reminders in red, and keeps the Word copy free of working notes. Research is mandatory, and every retrieved resource is archived locally under 08-网络资源/ (downloadable originals first, content snapshots otherwise); each write declares its destination through the organizer script (plan --dest) before landing, and the shared checklist is kept in sync with its local backup. Triggers include 九年级物理教案、希沃白板、.enbx 课件、核心素养目标、问题链/逻辑链、易混概念辨析、详案/逐字稿、40分钟课时教案、练习课详案、讲评课详案、板书设计、同步优学.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v8.3.2
+> 版本：v8.4.0
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 
 ## 1. 何时触发
@@ -54,7 +54,7 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 
 1. 只出详案/逐字稿（md＋docx），两套结构（新授课/练习课）不混用；先调研后生成（调研默认必做，资料须本地落地；仅用户明确不联网或网络不可用时可跳过，并注明原因）。
 2. docx 必须是真 OOXML：标题层级可导航；旁批 `〔…〕` 与正文样式可分；`〔板书｜…〕` 用红色样式。
-3. 教学目标按核心素养四维度分写；科学思维必须落在模型建构/科学推理/科学论证/质疑创新中至少两类；单句精简。
+3. 教学目标按核心素养四维度分写、学生视角、可测可评：先写一行“单元定位”；科学思维必须落在模型建构/科学推理/科学论证/质疑创新中至少两类，科学探究必须落在提出问题/获取证据/作出解释/交流评估中至少两类；单句精简、条件与标准不删（含条件或标准的句子 ≤40 字）；四维度后附“评价证据”至少 1 条；课标条目写在“一、教材分析”。
 4. 重难点、易混、板书动作、用时一律**就地**写在教学过程对应位置；“四、教学重难点”只写重点 1 条＋难点 ≤2 条。
 5. 板书写成成品：md 用 ```board 围栏，最多 2 块、每块 ≤8 行、每行 ≤14 字；填空用下划线留空、不用 □；板上不出现安全符号；docx 里插入渲染好的板书图。
 6. 过渡只为真实逻辑关系服务：导入/过渡/首问不得三连重复；弱联系只报下一步。
@@ -66,7 +66,7 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 | 要做的事 | 读哪里 |
 |---|---|
 | 内容主体：结构、两稿分工、需求 1–9 | references/01-教案生成要求.md |
-| 教学语言红线、板书规格、标注体系、目标精简、唯一自检清单 | references/02-教学设计细则.md |
+| 教学语言红线、板书规格、标注体系、目标叙写、唯一自检清单 | references/02-教学设计细则.md |
 | 关键观点与文献 | references/03-教学研究参考.md |
 | 资源网站索引与检索技巧 | references/05-教学资源网站.md |
 | 目录结构、命名、同步、脚本、变更记录 | references/04-技能维护规范.md |
