@@ -1,12 +1,12 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 7.0.0
-description: Use when the user asks to generate or revise a Grade 9 physics lesson plan from a Seewo EasiNote .enbx or similar whiteboard courseware, or references the saved 教案生成要求/通用版教案生成要求. Defaults to 40 minutes per period, confirms the number of periods before generation, outputs only the 详案/逐字稿, and covers both new-lesson and practice/review-lesson (练习课/讲评课) structures. Emphasizes transitions between adjacent paragraphs, blackboard timing and usage, misconception checks, question chains/logic chains, and hands-on/demo material lists. Triggers include 九年级物理教案、希沃白板、.enbx 课件、核心素养目标、热量比热容教案、问题链/逻辑链、易混概念辨析、详案/逐字稿、40分钟课时教案、练习课详案、讲评课详案、板书时机.
+version: 8.0.0
+description: Use when the user asks to generate or revise a Grade 9 physics lesson plan from a Seewo EasiNote .enbx or similar whiteboard courseware, or references the saved 教案生成要求/通用版教案生成要求. Defaults to 40 minutes per period, confirms the number of periods before generation, outputs only the 详案/逐字稿, and covers both new-lesson and practice/review-lesson (练习课/讲评课) structures. Before generating, it searches excellent lesson plans and courseware and summarizes board design, key-point and difficulty breakthrough, error correction, and transitions. It unpacks .enbx animations and image content, treats board design as 1–2 small blackboards, and keeps annotations distinct from body text. Triggers include 九年级物理教案、希沃白板、.enbx 课件、核心素养目标、热量比热容教案、问题链/逻辑链、易混概念辨析、详案/逐字稿、40分钟课时教案、练习课详案、讲评课详案、板书时机、同步优学.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v7.0.0
+> 版本：v8.0.0
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求一律按第 5 节读取 references/，不要凭记忆生成。
 
 ## 1. 何时触发
@@ -30,14 +30,16 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 5. 输出形式（默认只出详案/逐字稿：一个 Word + 一个 Markdown）
 6. 是否还要出练习课/讲评课详案
 7. 是否沿用现有“教案生成要求”结构
+8. 备课时是否允许联网检索并下载参考资料（默认允许，存入 `08-网络资源/`）
 
 信息齐了就执行，不再重复问。
 
 ## 3. 执行流程
 
-1. 解包 `.enbx`（ZIP 容器）：用 Python `zipfile` 读 `Slides/Slide_*.xml`，提取每页文字、表格、实验数据、例题；必要时记录 `Resources/` 里的图片/视频文件名。
+0. **备课调研（生成前必做）**：按 `05-教学资源网站.md` 检索 2—3 份优秀教案、2—3 份优秀课件/PPT，提炼板书/重点突破/难点突破/易错纠正/过渡语五维度“借鉴清单”；下载资料存 `08-网络资源/优秀教案/<章节>/`、`08-网络资源/优秀课件PPT/<章节>/`；**调研摘要先给用户确认**，用户说不用确认才继续。
+1. 解包 `.enbx`（ZIP 容器）：读 `Slides/Slide_*.xml`，提取每页文字、表格、实验数据、例题；**同时读每个元素上的 `<Animations>`，还原“点第几下依次出现什么”**（类型/触发/顺序/时长）；导出 `Resources/` 图片与视频到 `05-课件与文本/<章节>/课件素材/`，图片用 `read_image` 识别内容（数量多时用一个子代理，只回短描述），视频登记名称与位置。
 2. 查重：检查目标目录是否已有同名课时的 `详案.md` / `详案.docx`，沿用既有文件名与章节层级。
-3. 读取 `references/01-教案生成要求.md`，按其角色、交付形式、教案结构与需求 1–9 生成；要教学设计细则时读 02，要关键观点/文献时读 03。
+3. 读取 `references/01-教案生成要求.md`，按其角色、交付形式、教案结构、备课调研与需求 1–9 生成；要教学设计细则时读 02，要关键观点/文献时读 03，找资源站时读 05。
 4. 输出 `详案.md` 与 `详案.docx`（docx 放章节根级、md 放 `md文件/`）。
 5. 按第 6 节自检。
 6. 汇报改动、文件路径与可继续调整点。
@@ -46,38 +48,51 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 
 1. 只出详案/逐字稿，不出正常教案/简案。
 2. 新授课与练习课是两套结构，不能混用。
-3. docx 必须是真 OOXML：标题层级可导航，正文宋体小四 1.5 倍行距。
+3. docx 必须是真 OOXML：标题层级可导航，正文宋体小四 1.5 倍行距，旁批样式与正文可区分。
 4. 过渡只为真实逻辑关系服务：删掉后学生仍能顺听就不写“承接→引出”；不硬套、不自问自答。
-5. 板书必须标时机，且被提问指向、被小结使用——不能备而不用。
+5. 板书必须标时机，且写在**发生板书动作的那一句话旁边**；被提问指向、被小结使用——不能备而不用。
 6. 教学目标句数不变、单句精简。
 7. 教学准备必须列“实物 / 视频 / 动画 + 替代方案”。
-8. 教学过程必须标出每条知识点的“重点 / 难点 / 一笔带过”。
+8. 重难点标签**就地写在教学过程中该知识点出现的位置**，不在“四、教学重难点”板块机械贴标签。
+9. 板书**最多 2 块小黑板、默认 1 块**；每块 ≤6 行、每行 ≤6—8 字；优先圈/下划线/填空，不足再用色。
+10. 标注与正文区分：教学旁批统一写 `〔类型｜内容〕` 并单独排版。
+11. **先调研后生成**：未完成备课调研（并给用户看摘要）不得开始写教案。
+12. 易混判断题/反例优先检索现成优秀网络资源，并注明来源。
 
 ## 5. 详细要求在哪（按需读取）
 
 | 要做的事 | 读哪里 |
 |---|---|
 | 角色、任务、输入、课时划分 | `references/01-教案生成要求.md` §0 |
+| 备课调研（优秀教案/课件，五维度借鉴清单） | 同上 §0.5 |
 | 交付形式与文件命名（含练习课） | 同上 §1 |
 | 教案结构（新授课 / 练习课） | 同上 §2 |
+| 标注体系（旁批与正文区分） | 同上 §2.3，另见 02 |
 | Word 排版要求 | 同上 §3 |
 | 需求 1–9（过渡、补白、结构调整、板书、易混概念、课时、单稿、docx、练习课） | 同上 §4 |
+| 小黑板板书卡（容量、标记、格式、被用起来） | 同上 需求4 |
 | 通用要求、使用注意事项、教学目标精简、交付前自检 | `references/02-教学设计细则.md` |
 | 关键观点与文献链接 | `references/03-教学研究参考.md` |
-| 分时段应对（下午第一节 / 晚自习 / 体育课后） | `references/03-教学研究参考.md` 附录A |
-| 板书字迹较差的替代方案 | `references/03-教学研究参考.md` 需求 4 |
-| 目录结构、命名、同步、版本、变更记录 | `references/04-技能维护规范.md` |
+| 分时段应对（下午第一节 / 晚自习 / 体育课后） | 同上 附录A |
+| 板书字迹较差的替代方案 | 同上 需求 4 |
+| 教学资源网站索引与检索技巧 | `references/05-教学资源网站.md` |
+| 目录结构、命名、同步、版本、变更记录、配套脚本 | `references/04-技能维护规范.md` |
 
 ## 6. 交付前自检
 
-1. 教学目标是否满足“句数不变、单句精简、无冗余”。
-2. 是否只出了详案/逐字稿，未出现简案。
-3. 每处过渡语/衔接是否落在相邻两段之间、是否简短、是否写明衔接对象；有无自问自答式设问或万能过渡句。
-4. 每处板书是否标了“板书时机”，板书是否在提问与小结中被实际指向、使用。
-5. 教学准备是否列出“实物 / 视频 / 动画 + 替代方案”；演示是否做到“先预测、后说结论”。
-6. 教学过程是否标出每条知识点的“重点 / 难点 / 一笔带过”；练习课是否按需求 9 写足。
-7. docx 是否标题可导航、字号行距合规、表格公式正确、重读无乱码无丢失。
+1. 是否已完成备课调研并覆盖板书/重点/难点/易错/过渡语五维度，调研摘要是否给用户确认。
+2. 教学目标是否满足“句数不变、单句精简、无冗余”。
+3. 是否只出了详案/逐字稿，未出现简案。
+4. 每处过渡语/衔接是否落在相邻两段之间、简短、写明衔接对象；有无自问自答式设问或万能过渡句。
+5. 重难点标签是否就地写在教学过程相应知识点处，而非堆在“四、教学重难点”。
+6. 每处板书提醒是否写在发生板书动作的时机处（而非环节开头），板书是否在提问与小结中被实际指向、使用。
+7. 板书是否满足 1—2 块小黑板、每块 ≤6 行、每行 ≤8 字，是否优先圈/下划线/填空，是否给出每块板与生成顺序。
+8. 教学旁批是否用 `〔〕` 标注并与正文明显区分。
+9. 教学准备是否列出“实物 / 视频 / 动画 + 替代方案”；演示是否做到“先预测、后说结论”。
+10. 教学过程是否就地标出每条知识点的“重点 / 难点 / 一笔带过”；练习课是否按需求 9 写足，题目是否来自指定同步教辅或题库。
+11. 易混判断题/反例是否优先引用现成优秀网络资源并注明来源。
+12. docx 是否标题可导航、字号行距合规、旁批样式可区分、表格公式正确、重读无乱码无丢失。
 
 ## 7. 维护本技能
 
-改动本技能前，先读 `references/04-技能维护规范.md`，按其目录结构、命名、同步与校验流程执行；改完更新其中的变更记录。
+改动本技能前，先读 `references/04-技能维护规范.md`，按其目录结构、命名、同步与校验流程执行；改完更新其中的变更记录。工作区资源目录 `08-网络资源/` 与配套脚本 `06-工具与提示词/教程/extract_enbx.py`、`build_lesson_prompt.py` 的说明也在 04。
