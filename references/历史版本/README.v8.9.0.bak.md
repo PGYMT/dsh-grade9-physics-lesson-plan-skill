@@ -1,6 +1,6 @@
 # dsh-grade9-physics-lesson-plan-skill
 
-> 版本：v8.9.1
+> 版本：v8.9.0
 
 九年级物理教案生成 Skill，基于希沃白板 `.enbx` 或类似课件生成/修改教案。本仓库是技能文件的**权威源**（`SKILL.md` + `references/01–06` + 本说明）；运行入口 `~/.dsh/skills/generate-9th-grade-physics-lesson-plan` 是指向本仓库本地克隆的软链。
 

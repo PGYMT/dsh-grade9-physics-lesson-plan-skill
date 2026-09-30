@@ -1,12 +1,12 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 8.9.1
+version: 8.9.0
 description: Use when the user asks to generate or revise a Grade 9 physics lesson plan (九年级物理教案) from a Seewo EasiNote .enbx or similar whiteboard courseware, references the saved 教案生成要求/通用版教案生成要求, or asks to add pages to an existing .enbx (改课件/加页). Defaults to 40 minutes per period, confirms the number of periods, and outputs only the 详案/逐字稿 (a full Markdown working copy and a clean Word teaching copy); covers new-lesson and practice/review-lesson structures. It researches excellent lesson plans and courseware first and archives every retrieved resource locally. It can add native-text pages (with click-to-reveal answers) to a copy of the .enbx while leaving the original byte-identical. Not triggered when the user only asks how to use this skill. See SKILL.md §5 for the per-task reading list.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v8.9.1
+> 版本：v8.9.0
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 
 ## 1. 何时触发
