@@ -1,12 +1,12 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 8.6.0
+version: 8.7.0
 description: Use when the user asks to generate or revise a Grade 9 physics lesson plan from a Seewo EasiNote .enbx or similar whiteboard courseware, or references the saved 教案生成要求/通用版教案生成要求. Defaults to 40 minutes per period, confirms the number of periods, outputs only the 详案/逐字稿 (a full Markdown working copy and a clean Word teaching copy), and covers new-lesson and practice/review-lesson structures. It researches excellent lesson plans and courseware first, unpacks .enbx animations and images, writes board design as a finished two-board picture in five parallel knowledge blocks (keywords only, underline blanks instead of boxes, no safety icons), prints board reminders in red, and keeps the Word copy free of working notes. Research is mandatory, and every retrieved resource is archived locally under 08-网络资源/ (downloadable originals first, content snapshots otherwise); each write declares its destination through the organizer script (plan --dest) before landing, and the shared checklist is kept in sync with its local backup. It can also add pages to a copy of the .enbx — native-text practice pages, method pages, and click-to-reveal answers — leaving the original byte-identical (references/06). Triggers include 九年级物理教案、希沃白板、.enbx 课件、改课件/加页/插页/原生页版、核心素养目标、问题链/逻辑链、易混概念辨析、详案/逐字稿、40分钟课时教案、练习课详案、讲评课详案、板书设计、同步优学.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v8.6.0
+> 版本：v8.7.0
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 
 ## 1. 何时触发
@@ -43,8 +43,9 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 
 ## 3. 执行流程（线性，每步只做一次）
 
-0. **备课调研（必做）**：先查 08-网络资源/ 对应目录是否已有本节本地存档，有就直接复用；再按 05 检索 2—3 份优秀教案、2—3 份优秀课件，提炼板书/重点/难点/易错/过渡语五维度借鉴清单；可用内容就地落地保存到 08-网络资源/（原件优先，不能下载的存正文快照 .md），摘要先给用户确认。仅当用户明确不允许联网或网络不可用时才可跳过，并在教案“九、参考资料”注明原因。落地保存前先声明目的地（命令见 04 §5），按它给的路径写。
-1. **解包 .enbx**：读 Slides/Slide_*.xml 的文字、表格、数据、例题，并读每个元素的 <Animations> 还原“点第几下出现什么”；导出图片/视频到 05-课件与文本/<章节>/课件素材/，图片用 read_image 识别（量大用一个子代理，只回短描述）。
+0. **备课调研（必做）**：先查 08-网络资源/ 对应目录是否已有本节本地存档，有就直接复用；再按 05 检索 2—3 份优秀教案、2—3 份优秀课件，提炼板书/重点/难点/易错/过渡语/讲授思路/讲授顺序七维度借鉴清单（各来源讲授思路或顺序差别大时列对比表请用户选）；
+先查教师用书/教学进度表/网络教案给出建议课时数与「分课时安排表」，交用户确认；可用内容就地落地保存到 08-网络资源/（原件优先，不能下载的存正文快照 .md），摘要先给用户确认。仅当用户明确不允许联网或网络不可用时才可跳过，并在教案“九、参考资料”注明原因。落地保存前先声明目的地（命令见 04 §5），按它给的路径写。
+1. **解包 .enbx**：读 Slides/Slide_*.xml 的文字、表格、数据、例题，并读每个元素的 <Animations> 还原“点第几下出现什么”；导出图片/视频到 05-课件与文本/<章节>/课件素材/；图片用 read_image 识别（量大用一个子代理，只回短描述），视频用 ffmpeg 抽 3—6 帧（按时长自适应）＋课件自带封面，read_image 确认内容与大致走向，截图落 课件素材/<视频名>-截图/。
 2. **查重与确认**：检查目标目录是否已有同名课时的 详案.md/docx，沿用既有命名与层级。
 3. **写 详案.md**：按 01 的结构与需求 1–9 一次写全（逐字稿＋就地标注＋板书 ```board 源码）；写完不整篇重写。
 4. **一键生成 docx＋板书图**：运行工作区 00-模板与规范/教案docx生成脚本-v9.py，把 ```board 渲染成 PNG 插入 docx；板书旁批标红。
@@ -69,6 +70,10 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 7. 学生用件（导学案/记录表等）必须在“五、教学准备”写清名称、栏目、印发方式。
 8. 备查/过程内容（调研流水、课件补白汇总、板书时机汇总）一律不进教案，不单独成节。
 9. 改课件只改**副本**：原件逐字节不动；不碰希沃云端（不点“同步”“保存”）；不杀正在运行的希沃进程；成品命名“<节号><节名>-原生页版.enbx”（见 06）。
+10. 待查/过渡：只供备课追溯的内容（头部依据块、〔来源〕、〔素材〕〔设备〕、〔课件插页〕）在 docx 里用「待查」灰字样式保留；可留可删的中间件用「过渡」样式。板书卡下给脚本看的说明句不得写进教案。
+11. 视频：解包时每段视频抽 3—6 帧＋自带封面，先用 read_image 确认内容与大致走向。
+12. 依赖：技能根 DEPENDENCIES.md 是依赖唯一清单；换环境先跑 scripts/check_deps.py，缺失按它给的命令补。
+13. 版本标注：生成的 docx 末尾必须有生成信息块（技能版本／生成脚本／生成日期；最近一次修改版本／日期），版本从 SKILL.md frontmatter 读，读不到写「版本未知」。
 
 ## 5. 详细要求在哪（按需读取）
 
@@ -78,7 +83,8 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 | 教学语言红线、板书规格、标注体系、目标叙写、教案自检清单 | references/02-教学设计细则.md |
 | 关键观点与文献 | references/03-教学研究参考.md |
 | 资源网站索引与检索技巧 | references/05-教学资源网站.md |
-| 改 .enbx 课件、课件选题与排版、课件自检 | references/06-课件修改与排版.md |
+| 改 .enbx 课件、课件选题与排版、课件自检、官方依据与官方 API 备选（§8／§2.7） | references/06-课件修改与排版.md |
+| 依赖清单与自举（换机器/换 DSH 必读） | DEPENDENCIES.md |
 | 目录结构、命名、同步、脚本、变更记录 | references/04-技能维护规范.md |
 
 ## 6. 交付前自检
