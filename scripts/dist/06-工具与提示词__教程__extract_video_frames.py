@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""extract_video_frames.py — 课件视频抽帧与封面（v1.0，2026-09-30）。
+"""extract_video_frames.py — 课件视频抽帧与封面（v1.1，2026-09-30）。
 
 用法：
   python3 extract_video_frames.py <视频.mp4|素材目录|课件.enbx> [输出根目录]
@@ -82,27 +82,41 @@ def main():
     src = os.path.abspath(sys.argv[1])
     outroot = os.path.abspath(sys.argv[2]) if len(sys.argv) > 2 else os.path.dirname(src)
     videos, covers = [], {}
-    if src.lower().endswith('.enbx') and os.path.isfile(src):
-        z = zipfile.ZipFile(src)
-        videos = [os.path.join(os.path.dirname(src), '.tmp_videos', os.path.basename(n))
-                  for n in z.namelist() if n.startswith('Resources/') and n.lower().endswith('.mp4')]
-        if not videos:
-            print('该课件没有 mp4'); return 0
-        tmpv = os.path.dirname(videos[0]); os.makedirs(tmpv, exist_ok=True)
-        for n in z.namelist():
-            if n.startswith('Resources/') and n.lower().endswith('.mp4'):
-                with open(os.path.join(tmpv, os.path.basename(n)), 'wb') as f:
-                    f.write(z.read(n))
-        covers = covers_from_enbx(src)
-    elif os.path.isdir(src):
-        videos = sorted(glob.glob(os.path.join(src, '*.mp4')))
-    else:
-        videos = [src]
-    total = 0
-    for v in videos:
-        total += do_video(v, outroot, covers.get(os.path.basename(v)))
-    print('共 %d 段视频，%d 张截图' % (len(videos), total))
-    return 0
+    tmpv = None
+    tmpc = None
+    try:
+        if src.lower().endswith('.enbx') and os.path.isfile(src):
+            z = zipfile.ZipFile(src)
+            videos = [os.path.join(os.path.dirname(src), '.tmp_videos', os.path.basename(n))
+                      for n in z.namelist() if n.startswith('Resources/') and n.lower().endswith('.mp4')]
+            if not videos:
+                print('该课件没有 mp4'); return 0
+            tmpv = os.path.dirname(videos[0])
+            try:
+                os.makedirs(tmpv, exist_ok=True)
+            except OSError as exc:
+                print('错误：无法在 %s 建临时目录（%s）。该路径可能只读（如 /mnt/c），'
+                      '请先把课件复制到工作区再抽帧。' % (tmpv, exc))
+                return 2
+            for n in z.namelist():
+                if n.startswith('Resources/') and n.lower().endswith('.mp4'):
+                    with open(os.path.join(tmpv, os.path.basename(n)), 'wb') as f:
+                        f.write(z.read(n))
+            covers = covers_from_enbx(src)
+            tmpc = os.path.join(os.path.dirname(src), '.tmp_covers')
+        elif os.path.isdir(src):
+            videos = sorted(glob.glob(os.path.join(src, '*.mp4')))
+        else:
+            videos = [src]
+        total = 0
+        for v in videos:
+            total += do_video(v, outroot, covers.get(os.path.basename(v)))
+        print('共 %d 段视频，%d 张截图' % (len(videos), total))
+        return 0
+    finally:
+        for d in (tmpv, tmpc):
+            if d and os.path.isdir(d):
+                shutil.rmtree(d, ignore_errors=True)
 
 
 if __name__ == '__main__':

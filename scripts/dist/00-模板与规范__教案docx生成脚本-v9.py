@@ -14,6 +14,7 @@ v9 职责：
 
 用法：
   python3 教案docx生成脚本-v9.py                 # 默认第十五章 md文件/ 下全部 *详案.md
+  python3 教案docx生成脚本-v9.py --dir <md目录>    # 指定目录下全部 *详案.md
   python3 教案docx生成脚本-v9.py <a.md> [b.md…]
   python3 教案docx生成脚本-v9.py --verify
 """
@@ -302,14 +303,36 @@ def _verify_output(out_path, ver, expect_media):
         raise SystemExit('自检失败 %s：%s' % (os.path.basename(out_path), '; '.join(probs)))
 
 
+def scan_dir(d):
+    if not os.path.isdir(d):
+        raise SystemExit('目录不存在：' + d)
+    return sorted(os.path.join(d, n) for n in os.listdir(d) if n.endswith('详案.md'))
+
+
+def _parse_argv(argv):
+    positional, d = [], None
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a == '--dir':
+            if i + 1 >= len(argv):
+                raise SystemExit('错误：--dir 缺少取值')
+            d = argv[i + 1]; i += 2; continue
+        if a.startswith('--'):
+            i += 1; continue
+        positional.append(a); i += 1
+    return positional, d
+
+
 def main():
     v8 = _load_v8()
     ver = skill_version()
-    args = [a for a in sys.argv[1:] if not a.startswith('--')]
-    if '--verify' in sys.argv:
-        targets = args or [v8.out_for(p) for p in v8.default_targets()]
+    argv = sys.argv[1:]
+    args, d = _parse_argv(argv)
+    if '--verify' in argv:
+        targets = args or [v8.out_for(p) for p in (scan_dir(d) if d else v8.default_targets())]
         return v8.verify(targets)
-    mds = args or v8.default_targets()
+    mds = args or (scan_dir(d) if d else v8.default_targets())
     if not mds:
         print('没有找到待转换的 md 文件')
         return 1

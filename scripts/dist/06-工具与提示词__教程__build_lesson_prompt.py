@@ -1,13 +1,45 @@
 #!/usr/bin/env python3
 # 从技能 references 的 01/02 拼装工作区可复制提示词（唯一生成物，勿手工改）。
-# 版本：v2.3（2026-09-30）  用法：python3 build_lesson_prompt.py
+# 版本：v2.4（2026-09-30）  用法：python3 build_lesson_prompt.py
 # 技能版本号从 SKILL.md frontmatter 自动读取，禁止在本脚本内写死。
-import os, re
+import os, re, sys
 NL = chr(10)
-SKILL = '/root/skill-repos/g9-physics'
-OUT = '/root/dsh-workspace/工作文件/06-工具与提示词/提示词/md文件/教案生成要求提示词.md'
-OUT_REF = '/root/dsh-workspace/工作文件/06-工具与提示词/提示词/md文件/教学研究参考.md'
-OUT_IDX = '/root/dsh-workspace/工作文件/08-网络资源/教学资源网站索引.md'
+HERE = os.path.dirname(os.path.abspath(__file__))
+WS = os.path.abspath(os.path.join(HERE, '..', '..'))
+DEFAULT_SKILL = '/root/skill-repos/g9-physics'
+
+
+def usage():
+    print('用法：python3 build_lesson_prompt.py [--skill-dir <技能仓库>]')
+    print('技能仓库按 --skill-dir、环境变量 JIAOAN_SKILL_DIR、运行入口软链、默认路径依次回退。')
+
+
+def resolve_skill(argv):
+    cands = []
+    if '--skill-dir' in argv:
+        i = argv.index('--skill-dir')
+        if i + 1 >= len(argv):
+            raise SystemExit('错误：--skill-dir 缺少取值')
+        cands.append(argv[i + 1])
+    env = os.environ.get('JIAOAN_SKILL_DIR')
+    if env:
+        cands.append(env)
+    cands.append(os.path.expanduser('~/.dsh/skills/generate-9th-grade-physics-lesson-plan'))
+    cands.append(DEFAULT_SKILL)
+    for d in cands:
+        if os.path.isfile(os.path.join(d, 'SKILL.md')) and os.path.isdir(os.path.join(d, 'references')):
+            return d
+    raise SystemExit('找不到技能仓库（需含 SKILL.md 与 references/）：用 --skill-dir 或 JIAOAN_SKILL_DIR 指定')
+
+
+if '-h' in sys.argv[1:] or '--help' in sys.argv[1:]:
+    usage()
+    raise SystemExit(0)
+
+SKILL = resolve_skill(sys.argv[1:])
+OUT = os.path.join(WS, '06-工具与提示词/提示词/md文件/教案生成要求提示词.md')
+OUT_REF = os.path.join(WS, '06-工具与提示词/提示词/md文件/教学研究参考.md')
+OUT_IDX = os.path.join(WS, '08-网络资源/教学资源网站索引.md')
 def rd(p): return open(p, encoding="utf-8").read().rstrip()
 def skill_version():
     m = re.search(r"^version:\s*([0-9][^\s]*)\s*$", rd(os.path.join(SKILL, "SKILL.md")), re.M)

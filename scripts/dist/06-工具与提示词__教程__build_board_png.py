@@ -29,11 +29,16 @@ def _pillow():
         pass
     libs = os.path.join(HERE, "vendor", "_libs")
     if not os.path.isdir(libs):
+        tag = "cp%d%d" % sys.version_info[:2]
         whls = sorted(glob.glob(os.path.join(HERE, "vendor", "pillow-*.whl")))
-        if not whls:
-            raise RuntimeError("Pillow 不可用，且未找到 vendor/pillow-*.whl")
+        pick = [w for w in whls if tag in os.path.basename(w)] or \
+               [w for w in whls if "py3-none-any" in os.path.basename(w)]
+        if not pick:
+            raise RuntimeError(
+                "Pillow 不可用：系统未装 Pillow，vendor/ 里也没有匹配当前解释器（%s）的 wheel。"
+                "请运行 pip install pillow，或下载 pillow-*-%s-*.whl 放进 vendor/。" % (tag, tag))
         os.makedirs(libs, exist_ok=True)
-        with zipfile.ZipFile(whls[0]) as z:
+        with zipfile.ZipFile(pick[0]) as z:
             z.extractall(libs)
     if libs not in sys.path:
         sys.path.insert(0, libs)
@@ -223,6 +228,9 @@ def render_boards(md_path, out_dir=None):
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("用法：python3 build_board_png.py <md文件> [输出目录]")
+        raise SystemExit(1)
+    if not os.path.isfile(sys.argv[1]):
+        print("错误：找不到 md 文件：%s\n用法：python3 build_board_png.py <md文件> [输出目录]" % sys.argv[1])
         raise SystemExit(1)
     outdir = sys.argv[2] if len(sys.argv) > 2 else None
     for r in render_boards(sys.argv[1], outdir):

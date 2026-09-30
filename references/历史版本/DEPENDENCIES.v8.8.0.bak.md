@@ -1,6 +1,6 @@
 # 依赖清单与自举（DEPENDENCIES.md）
 
-> 版本：v8.9.0｜适用技能：generate-9th-grade-physics-lesson-plan
+> 版本：v8.8.0｜适用技能：generate-9th-grade-physics-lesson-plan
 > 用途：换机器、换 DSH、或第一次运行本技能前，先读本文件并跑一次自检。
 > 自检/自举脚本：`scripts/check_deps.py`（检测；`--install` 补工作区脚本；`--sync-dist` 反向同步）。
 
