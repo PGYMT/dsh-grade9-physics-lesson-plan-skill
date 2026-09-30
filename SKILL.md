@@ -1,12 +1,12 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 8.5.0
+version: 8.6.0
 description: Use when the user asks to generate or revise a Grade 9 physics lesson plan from a Seewo EasiNote .enbx or similar whiteboard courseware, or references the saved 教案生成要求/通用版教案生成要求. Defaults to 40 minutes per period, confirms the number of periods, outputs only the 详案/逐字稿 (a full Markdown working copy and a clean Word teaching copy), and covers new-lesson and practice/review-lesson structures. It researches excellent lesson plans and courseware first, unpacks .enbx animations and images, writes board design as a finished two-board picture in five parallel knowledge blocks (keywords only, underline blanks instead of boxes, no safety icons), prints board reminders in red, and keeps the Word copy free of working notes. Research is mandatory, and every retrieved resource is archived locally under 08-网络资源/ (downloadable originals first, content snapshots otherwise); each write declares its destination through the organizer script (plan --dest) before landing, and the shared checklist is kept in sync with its local backup. It can also add pages to a copy of the .enbx — native-text practice pages, method pages, and click-to-reveal answers — leaving the original byte-identical (references/06). Triggers include 九年级物理教案、希沃白板、.enbx 课件、改课件/加页/插页/原生页版、核心素养目标、问题链/逻辑链、易混概念辨析、详案/逐字稿、40分钟课时教案、练习课详案、讲评课详案、板书设计、同步优学.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v8.5.0
+> 版本：v8.6.0
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 
 ## 1. 何时触发
@@ -26,7 +26,7 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 - 实验条件：默认“仅多媒体”；不出“学生分组实验”版
 - 稿型：只出详案/逐字稿（1 份 md＋1 份 docx）
 - 板书：最多 2 块小黑板，每块 ≤8 行、每行 ≤14 字
-- 落位：docx 放章节根级、md 放 md文件/；文件名“<节号><节名>-<N课时>-<版本>-详案”；写文件前先用整理脚本声明目的地（见 04 §5）
+- 落位：docx 放章节根级、md 放 md文件/；文件名“<节号><节名>-<课时标识>-<版本>-详案”（多课时用“第N课时”、单课时用“1课时”）；写文件前先用整理脚本声明目的地（见 04 §5）
 - 联网调研：默认允许且必做；检索到的可用内容落地存 08-网络资源/（能下载的原件优先，不能下载的存正文快照 .md）
 
 缺哪项问哪项，其余不重复问：
