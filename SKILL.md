@@ -1,12 +1,12 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 8.7.0
+version: 8.8.0
 description: Use when the user asks to generate or revise a Grade 9 physics lesson plan from a Seewo EasiNote .enbx or similar whiteboard courseware, or references the saved 教案生成要求/通用版教案生成要求. Defaults to 40 minutes per period, confirms the number of periods, outputs only the 详案/逐字稿 (a full Markdown working copy and a clean Word teaching copy), and covers new-lesson and practice/review-lesson structures. It researches excellent lesson plans and courseware first, unpacks .enbx animations and images, writes board design as a finished two-board picture in five parallel knowledge blocks (keywords only, underline blanks instead of boxes, no safety icons), prints board reminders in red, and keeps the Word copy free of working notes. Research is mandatory, and every retrieved resource is archived locally under 08-网络资源/ (downloadable originals first, content snapshots otherwise); each write declares its destination through the organizer script (plan --dest) before landing, and the shared checklist is kept in sync with its local backup. It can also add pages to a copy of the .enbx — native-text practice pages, method pages, and click-to-reveal answers — leaving the original byte-identical (references/06). Triggers include 九年级物理教案、希沃白板、.enbx 课件、改课件/加页/插页/原生页版、核心素养目标、问题链/逻辑链、易混概念辨析、详案/逐字稿、40分钟课时教案、练习课详案、讲评课详案、板书设计、同步优学.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v8.7.0
+> 版本：v8.8.0
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 
 ## 1. 何时触发
@@ -76,6 +76,8 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 13. 版本标注：生成的 docx 末尾必须有生成信息块（技能版本／生成脚本／生成日期；最近一次修改版本／日期），版本从 SKILL.md frontmatter 读，读不到写「版本未知」。
 
 ## 5. 详细要求在哪（按需读取）
+
+新授课：SKILL→01→02→05；改课件才加 06；03 仅要文献论据时读。
 
 | 要做的事 | 读哪里 |
 |---|---|

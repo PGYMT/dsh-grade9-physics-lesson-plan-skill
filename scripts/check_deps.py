@@ -21,6 +21,7 @@ WS_SCRIPTS = {
     '00-模板与规范/教案docx生成脚本-v9.py': 'md→docx：板书图/旁批/待查/生成信息块',
     '06-工具与提示词/教程/build_board_png.py': 'board 围栏渲染板书 PNG',
     '06-工具与提示词/教程/extract_enbx.py': '解包 .enbx：文本/动画/素材/视频信息',
+    '06-工具与提示词/教程/build_lesson_prompt.py': '由 01+02+06 生成工作区提示词与 03/05 可读版',
     '06-工具与提示词/教程/extract_video_frames.py': '课件视频抽帧与封面',
     '06-工具与提示词/教程/build_enbx_native_pages.py': '给 .enbx 副本加原生页',
     '06-工具与提示词/教程/enbx_verify2.ps1': 'Windows 侧打开/跳页/截图',

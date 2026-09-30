@@ -5,7 +5,10 @@
 - 页面母版（课堂练习横幅 + 优翼 logo + 底栏）从原件第 34 页克隆，保证风格一致。
 
 用法:
-  python3 build_enbx_native_pages.py [--set test|t8|p1] [--out <路径>]
+  python3 build_enbx_native_pages.py --help
+  python3 build_enbx_native_pages.py [--set test|t8|p1|t16] [--out <路径>]
+
+内置 15.2 课件的一次性页组；--help 只打印用法，不构建、不写文件。通用加页按 references/06 §2 自己写。
 """
 import os, sys, re, zipfile, hashlib
 
@@ -374,14 +377,34 @@ def verify(path):
     return ok
 
 
+USAGE = """用法：python3 build_enbx_native_pages.py [--set test|t8|p1|t16] [--out <路径>]
+
+内置 15.2 课件的一次性页组，只做只读参数校验；--help 只打印用法，不执行构建、不写任何文件。
+通用加页请按 references/06 §2 自己写。"""
+
+
 def main():
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print(USAGE)
+        return 0
     setname = "p1"
     if "--set" in sys.argv:
-        setname = sys.argv[sys.argv.index("--set") + 1]
-    pages = SETS[setname]
+        i = sys.argv.index("--set")
+        if i + 1 >= len(sys.argv):
+            print("错误：--set 缺少取值\n\n" + USAGE)
+            return 2
+        setname = sys.argv[i + 1]
+        if setname not in SETS:
+            print("错误：未知页组 %r（可选：%s）\n\n%s" % (setname, "/".join(SETS), USAGE))
+            return 2
     out = os.path.join(WS, "99-待处理", "收件箱", OUTS[setname])
     if "--out" in sys.argv:
-        out = sys.argv[sys.argv.index("--out") + 1]
+        i = sys.argv.index("--out")
+        if i + 1 >= len(sys.argv):
+            print("错误：--out 缺少取值\n\n" + USAGE)
+            return 2
+        out = sys.argv[i + 1]
+    pages = SETS[setname]
     print("源课件:", os.path.basename(SRC), "| 页组:", setname, "| 新增", len(pages), "页")
     n0, n1, nr = build(SRC, out, pages)
     print("OK ->", out)
@@ -389,7 +412,8 @@ def main():
     for p in pages:
         print("   ", p["banner"], "|", p.get("topic") or "")
     verify(out)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

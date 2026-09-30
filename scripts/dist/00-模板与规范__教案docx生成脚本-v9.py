@@ -8,7 +8,7 @@ v9 职责：
   3. 按段首类型改派：〔待查｜〕〔来源｜〕〔素材｜〕〔设备｜〕〔课件插页｜〕-> CheckNote；
      〔过渡｜〕-> TransitionNote；头部依据块（首个 Heading1 之前的引用段）-> CheckNote；
   4. 正文末尾（分节符前）写生成信息块：技能版本／生成脚本／生成日期 + 最近修改版本／日期；
-  5. 生成后自检：图片三件套 + 版本块。
+  5. 生成后自检：图片三件套 + 版本块 + v8 结构自检。
 
 版本号读 SKILL.md frontmatter（JIAOAN_SKILL_DIR / 运行入口软链 / 权威源 依次尝试），读不到写「版本未知」。
 
@@ -219,6 +219,8 @@ def make_docx_v9(md_path, out_path, ver):
         shutil.rmtree(tmpdir, ignore_errors=True)
         shutil.rmtree(os.path.dirname(tmp_md), ignore_errors=True)
     _verify_output(out_path, ver, bool(blocks))
+    if v8.verify([out_path]) != 0:
+        raise SystemExit('v8 结构自检失败：' + os.path.basename(out_path))
     return stats
 
 
