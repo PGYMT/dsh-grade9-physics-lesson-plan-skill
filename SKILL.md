@@ -1,12 +1,12 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 8.4.0
-description: Use when the user asks to generate or revise a Grade 9 physics lesson plan from a Seewo EasiNote .enbx or similar whiteboard courseware, or references the saved 教案生成要求/通用版教案生成要求. Defaults to 40 minutes per period, confirms the number of periods, outputs only the 详案/逐字稿 (a full Markdown working copy and a clean Word teaching copy), and covers new-lesson and practice/review-lesson structures. It researches excellent lesson plans and courseware first, unpacks .enbx animations and images, writes board design as a finished two-board picture in five parallel knowledge blocks (keywords only, underline blanks instead of boxes, no safety icons), prints board reminders in red, and keeps the Word copy free of working notes. Research is mandatory, and every retrieved resource is archived locally under 08-网络资源/ (downloadable originals first, content snapshots otherwise); each write declares its destination through the organizer script (plan --dest) before landing, and the shared checklist is kept in sync with its local backup. Triggers include 九年级物理教案、希沃白板、.enbx 课件、核心素养目标、问题链/逻辑链、易混概念辨析、详案/逐字稿、40分钟课时教案、练习课详案、讲评课详案、板书设计、同步优学.
+version: 8.5.0
+description: Use when the user asks to generate or revise a Grade 9 physics lesson plan from a Seewo EasiNote .enbx or similar whiteboard courseware, or references the saved 教案生成要求/通用版教案生成要求. Defaults to 40 minutes per period, confirms the number of periods, outputs only the 详案/逐字稿 (a full Markdown working copy and a clean Word teaching copy), and covers new-lesson and practice/review-lesson structures. It researches excellent lesson plans and courseware first, unpacks .enbx animations and images, writes board design as a finished two-board picture in five parallel knowledge blocks (keywords only, underline blanks instead of boxes, no safety icons), prints board reminders in red, and keeps the Word copy free of working notes. Research is mandatory, and every retrieved resource is archived locally under 08-网络资源/ (downloadable originals first, content snapshots otherwise); each write declares its destination through the organizer script (plan --dest) before landing, and the shared checklist is kept in sync with its local backup. It can also add pages to a copy of the .enbx — native-text practice pages, method pages, and click-to-reveal answers — leaving the original byte-identical (references/06). Triggers include 九年级物理教案、希沃白板、.enbx 课件、改课件/加页/插页/原生页版、核心素养目标、问题链/逻辑链、易混概念辨析、详案/逐字稿、40分钟课时教案、练习课详案、讲评课详案、板书设计、同步优学.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v8.4.0
+> 版本：v8.5.0
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 
 ## 1. 何时触发
@@ -14,7 +14,8 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 满足任一条件才执行：
 - 用户明确要求“生成/修改/重写一份九年级物理教案”；
 - 用户提供 .enbx / 希沃白板课件路径，并希望基于它写教案；
-- 用户明确提到“按教案生成要求/提示词/规范来做”。
+- 用户明确提到“按教案生成要求/提示词/规范来做”；
+- 用户要求给现有 .enbx 课件加页/插练习页/改课件（如“加当堂练习页”“做原生页版”）。
 
 不触发（按普通问题回答）：只讨论物理概念、只写普通文档；没有课件也没有课时信息；只是询问本技能怎么用。
 
@@ -50,6 +51,13 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 5. **自检**：按 02 §6 跑一遍（脚本机械项＋人工清单）。
 6. **汇报**：文件路径、改动点、可继续调整处。
 
+### 3.1 若任务是“改课件 / 加页”（分支）
+按 06 §4 的 9 步执行：确认加什么页、加在哪 → 先查本地存档再检索 → 提炼内容摘要给用户确认 → 读原件风格 → 克隆母版页写原生页 → 装配进副本（命名“-原生页版.enbx”）→ 自检 → 希沃核对 → 汇报。
+顺序恒定：**先出教案摘要 → 用户确认 → 再落课件页**；只改副本，原件逐字节不动。
+
+### 3.2 若任务是“修订已有教案”（分支）
+读现状 → 列改动清单（位置＋原因＋影响）→ 经批准 → 旧稿备份为“-旧版” → 修改 → 重跑 02 §6 自检 → 汇报；不直接覆盖旧稿。
+
 ## 4. 硬约束（不可偏离；细节见 references）
 
 1. 只出详案/逐字稿（md＋docx），两套结构（新授课/练习课）不混用；先调研后生成（调研默认必做，资料须本地落地；仅用户明确不联网或网络不可用时可跳过，并注明原因）。
@@ -60,20 +68,22 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 6. 过渡只为真实逻辑关系服务：导入/过渡/首问不得三连重复；弱联系只报下一步。
 7. 学生用件（导学案/记录表等）必须在“五、教学准备”写清名称、栏目、印发方式。
 8. 备查/过程内容（调研流水、课件补白汇总、板书时机汇总）一律不进教案，不单独成节。
+9. 改课件只改**副本**：原件逐字节不动；不碰希沃云端（不点“同步”“保存”）；不杀正在运行的希沃进程；成品命名“<节号><节名>-原生页版.enbx”（见 06）。
 
 ## 5. 详细要求在哪（按需读取）
 
 | 要做的事 | 读哪里 |
 |---|---|
 | 内容主体：结构、两稿分工、需求 1–9 | references/01-教案生成要求.md |
-| 教学语言红线、板书规格、标注体系、目标叙写、唯一自检清单 | references/02-教学设计细则.md |
+| 教学语言红线、板书规格、标注体系、目标叙写、教案自检清单 | references/02-教学设计细则.md |
 | 关键观点与文献 | references/03-教学研究参考.md |
 | 资源网站索引与检索技巧 | references/05-教学资源网站.md |
+| 改 .enbx 课件、课件选题与排版、课件自检 | references/06-课件修改与排版.md |
 | 目录结构、命名、同步、脚本、变更记录 | references/04-技能维护规范.md |
 
 ## 6. 交付前自检
 
-见 references/02-教学设计细则.md §6。这是本技能**唯一**一份自检清单，不要另立第二份。
+教案自检见 references/02-教学设计细则.md §6（唯一**教案**清单）；课件自检见 references/06-课件修改与排版.md §6（唯一**课件**清单）。两份清单分属不同产出物，不要互相复制。
 
 ## 7. 维护本技能
 
@@ -83,3 +93,4 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 - 运行入口：~/.dsh/skills/generate-9th-grade-physics-lesson-plan，是指向权威源的软链，勿直接改。
 - DSH 仓库 .agents/skills/ 下的旧副本已移除，别再往那儿放。
 - 改完按 04 校验，并跑 sync_checklist.py 与 skill_link.py verify。
+- 课件修改脚本在 06-工具与提示词/教程/（build_enbx_native_pages.py、enbx_verify2.ps1、enbx_shot_ocr.py、expected_pages.json），索引见 06 §7。
