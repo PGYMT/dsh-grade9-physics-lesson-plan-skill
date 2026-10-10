@@ -84,7 +84,7 @@ description: Use when the user asks to generate or revise a Grade 9 physics less
 | 内容主体：结构、两稿分工、需求 1–9 | references/01-教案生成要求.md |
 | 教学语言红线、板书规格、标注体系、目标叙写、教案自检清单 | references/02-教学设计细则.md |
 | 关键观点与文献 | references/03-教学研究参考.md |
-| 资源网站索引与检索技巧 | references/05-教学资源网站.md |
+| 资源取件手册（9 章：教材/教案/导学案/课件/试题/视频/板书/文献/工具） | references/05-教学资源网站.md |
 | 改 .enbx 课件、课件选题与排版、课件自检、官方依据与官方 API 备选（§8／§2.7） | references/06-课件修改与排版.md |
 | 依赖清单与自举（换机器/换 DSH 必读） | DEPENDENCIES.md |
 | 目录结构、命名、同步、脚本、变更记录 | references/04-技能维护规范.md |

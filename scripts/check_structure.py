@@ -7,7 +7,7 @@
   2. 脚本名单三处一致：check_deps.py 的 WS_SCRIPTS、references/04 的脚本表与校验清单、scripts/dist/ 文件。
   3. SKILL.md §5 索引表指向的文件都存在。
   4. 正文与工作区生成物一致：教案生成要求提示词.md 含 01/02/06 正文；教学研究参考.md＝03；
-     教学资源网站索引.md＝05。
+     教学资源取件手册.md＝05。
   5. scripts/dist/ 各副本与工作区脚本逐字节一致。
 
 用法：
@@ -107,7 +107,7 @@ def main():
     print('== 4. 正文与工作区生成物一致 ==')
     prompt_p = os.path.join(ws, '06-工具与提示词/提示词/md文件/教案生成要求提示词.md')
     ref_p = os.path.join(ws, '06-工具与提示词/提示词/md文件/教学研究参考.md')
-    idx_p = os.path.join(ws, '08-网络资源/教学资源网站索引.md')
+    idx_p = os.path.join(ws, '08-网络资源/教学资源取件手册.md')
     if os.path.isfile(prompt_p):
         pt = rd(prompt_p)
         check('提示词含 01/02/06 正文',
@@ -116,7 +116,7 @@ def main():
         check('提示词生成物存在', False, prompt_p)
     check('教学研究参考.md＝03',
           os.path.isfile(ref_p) and rd(ref_p).rstrip() == rd(os.path.join(SKILL_DIR, 'references/03-教学研究参考.md')).rstrip())
-    check('教学资源网站索引.md＝05',
+    check('教学资源取件手册.md＝05',
           os.path.isfile(idx_p) and rd(idx_p).rstrip() == rd(os.path.join(SKILL_DIR, 'references/05-教学资源网站.md')).rstrip())
 
     print('== 5. dist 副本与工作区脚本逐字节一致 ==')
