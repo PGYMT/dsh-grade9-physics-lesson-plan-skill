@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 """check_structure.py — 教案技能结构一致性校验（v1.0，2026-09-30）。
 
-校验五类：
+校验六类：
   1. 版本号五处一致：SKILL.md frontmatter、SKILL.md 正文首行、01–06 文件头、README.md、DEPENDENCIES.md。
   2. 脚本名单三处一致：check_deps.py 的 WS_SCRIPTS、references/04 的脚本表与校验清单、scripts/dist/ 文件。
   3. SKILL.md §5 索引表指向的文件都存在。
   4. 正文与工作区生成物一致：教案生成要求提示词.md 含 01/02/06 正文；教学研究参考.md＝03；
      教学资源取件手册.md＝05。
   5. scripts/dist/ 各副本与工作区脚本逐字节一致。
+  6. 技能根两个新脚本（check_research.py、check_lesson.py）存在，且在 04 与 DEPENDENCIES 有登记。
 
 用法：
   python3 scripts/check_structure.py [--workspace DIR]
@@ -130,6 +131,12 @@ def main():
             check('dist 副本存在 ' + rel, False, '缺失')
             continue
         check('dist 一致 ' + os.path.basename(rel), rd(src) == rd(dst))
+
+    print('== 6. 技能新脚本存在与登记 ==')
+    tdep = rd(os.path.join(SKILL_DIR, 'DEPENDENCIES.md'))
+    for s in ['check_research.py', 'check_lesson.py']:
+        check('scripts/%s 存在' % s, os.path.isfile(os.path.join(SKILL_DIR, 'scripts', s)))
+        check('%s 已在 04/DEPENDENCIES 登记' % s, s in t04 and s in tdep)
 
     bad = [n for n, ok, _ in RESULTS if not ok]
     print('')

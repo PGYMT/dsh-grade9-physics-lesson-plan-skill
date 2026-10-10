@@ -19,7 +19,7 @@ v9 职责：
   python3 教案docx生成脚本-v9.py --verify
 """
 from __future__ import annotations
-import os, re, sys, zipfile, shutil, importlib.util, tempfile, datetime
+import os, re, sys, zipfile, shutil, importlib.util, tempfile, datetime, subprocess
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 V8 = os.path.join(HERE, '教案docx生成脚本-v8.py')
@@ -54,6 +54,38 @@ def skill_version():
         if m:
             return 'v' + m.group(1)
     return '版本未知'
+
+
+def _skill_dir():
+    cands = []
+    env = os.environ.get('JIAOAN_SKILL_DIR')
+    if env:
+        cands.append(env)
+    cands.append(os.path.expanduser('~/.dsh/skills/generate-9th-grade-physics-lesson-plan'))
+    cands.append('/root/skill-repos/g9-physics')
+    for d in cands:
+        if os.path.isfile(os.path.join(d, 'SKILL.md')):
+            return d
+    return ''
+
+
+def _run_lesson_check(out_path, md_path):
+    skill = _skill_dir()
+    p = os.path.join(skill, 'scripts', 'check_lesson.py') if skill else ''
+    if not p or not os.path.isfile(p):
+        print('  [提示] 未找到 check_lesson.py（路径：%s），跳过板书规格校验' % (p or '未定位技能目录'))
+        return
+    cmd = [sys.executable, p, '--docx', out_path, '--md', md_path]
+    if skill:
+        cmd += ['--skill', skill]
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True)
+    except OSError as ex:
+        print('  [提示] 调用 check_lesson.py 失败：%s' % ex)
+        return
+    print(r.stdout.rstrip())
+    if r.returncode != 0:
+        print('  [提示] check_lesson.py 有失败项（见上），不中断 docx 生成')
 
 
 def _xml(s):
@@ -340,6 +372,7 @@ def main():
         out = v8.out_for(md)
         stats = make_docx_v9(md, out, ver)
         print('[写出]', os.path.basename(out), stats, '技能版本', ver)
+        _run_lesson_check(out, md)
     return 0
 
 

@@ -1,19 +1,20 @@
 # dsh-grade9-physics-lesson-plan-skill
 
-> 版本：v8.9.1
+> 版本：v8.10.0
 
 九年级物理教案生成 Skill，基于希沃白板 `.enbx` 或类似课件生成/修改教案。本仓库是技能文件的**权威源**（`SKILL.md` + `references/01–06` + 本说明）；运行入口 `~/.dsh/skills/generate-9th-grade-physics-lesson-plan` 是指向本仓库本地克隆的软链。
 
 ## 功能特点
 
 - 只出详案/逐字稿（1 份 Markdown 工作稿＋1 份 Word 上课稿），默认每课时 40 分钟。
-- 备课调研必做：先查本地存档，再检索优秀教案与课件，摘要先给用户确认，可用内容落地 08-网络资源/。
+- 备课调研必做：先查本地存档与《备课缺口表》，按《教学资源取件手册》九章顺序自己抓，抓不到或质量差才出《人工取件清单》；摘要先给用户确认，可用内容落地 08-网络资源/；跑 scripts/check_research.py 才进写稿。
 - 板书成品化：最多 2 块、每块 ≤8 行、每行 ≤14 字；md 用 board 围栏，docx 插入渲染好的板书图。
 - 教学目标按核心素养四维度、学生视角、可测可评；重难点就地写；过渡语服务真实逻辑关系。
 - 可对 .enbx 副本加原生页（答案点击出现），原件逐字节不动；可修订已有教案。
+- 外部校验：scripts/check_research.py 判调研完成度、scripts/check_lesson.py 判板书规格（v9 生成 docx 时自动调用），负样本自检 scripts/tests/run_tests.py。
 - 依赖自举：换机器先跑 scripts/check_deps.py。
 
-详细口径以 SKILL.md 与 references/01–06 为准：内容见 01，教学设计细则见 02，文献见 03，维护见 04，资源网站见 05，课件修改见 06。
+详细口径以 SKILL.md 与 references/01–06 为准：内容见 01，教学设计细则见 02，文献见 03，维护见 04，资源取件见 05，课件修改见 06。
 
 ## 使用方法
 
@@ -31,10 +32,10 @@
 │   ├── 02-教学设计细则.md       # 教学语言红线、板书规格、标注体系、目标精简、教案自检清单
 │   ├── 03-教学研究参考.md       # 关键观点与文献（按需求号）+ 分时段附录
 │   ├── 04-技能维护规范.md       # 文件构成、命名、同步、版本、脚本、变更记录
-│   ├── 05-教学资源网站.md       # 资源网站索引与检索技巧
+│   ├── 05-教学资源网站.md       # 教学资源取件手册（9 章，站点唯一权威）
 │   └── 06-课件修改与排版.md     # 课件（.enbx）修改与排版的执行口径
 ├── DEPENDENCIES.md             # 依赖清单与自举说明
-├── scripts/                    # check_deps.py（自检/--install/--sync-dist）与 dist/ 分发副本
+├── scripts/                    # check_deps/check_structure/check_research/check_lesson + tests/ 负样本 + dist/ 分发副本
 └── README.md                   # 本说明
 ```
 
@@ -51,6 +52,8 @@
 ## 版本记录
 
 完整变更记录见 references/04-技能维护规范.md §6。高层里程碑：
+
+- v8.10.0：references/05 重写为 9 章《教学资源取件手册》；备课调研改为取件手册驱动并加 check_research.py；新增 check_lesson.py（板书规格，v9 生成时自动调用）与负样本自检。
 
 - v8.7.0：备课调研七维度与分课时安排表、视频抽帧；docx 生成信息块与待查/过渡样式；新增 DEPENDENCIES.md 与 scripts/。
 - v8.5.0：课件修改与排版纳入技能（references/06）。

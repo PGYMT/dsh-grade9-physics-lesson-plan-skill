@@ -83,6 +83,14 @@ def check(ws):
               '/root/.dsh/skills/auto-organize-work-files/scripts/sync_checklist.py',
               os.path.join(SKILL_DIR, 'SKILL.md')]:
         (ok if os.path.exists(p) else bad)(p)
+    print('== 技能脚本（不进 WS_SCRIPTS/dist） ==')
+    for s in ['check_research.py', 'check_lesson.py']:
+        p = os.path.join(SKILL_DIR, 'scripts', s)
+        if os.path.exists(p):
+            ok(s)
+        else:
+            bad(p)
+            missing.append(s)
     return missing + ws_missing
 
 def install(ws):
