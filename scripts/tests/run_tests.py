@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""run_tests.py — check_research.py / check_lesson.py 负样本自检壳（v8.12.0，纯标准库）。
+"""run_tests.py — check_research.py / check_lesson.py 负样本自检壳（v8.13.0，纯标准库）。
 
 用法：
   python3 scripts/tests/run_tests.py [--workspace DIR]
@@ -176,22 +176,26 @@ def research_tests(root):
     os.remove(manual)
 
 
-def base_md(boards=1, rows=4, note=True):
+def base_md(boards=1, rows=4, note=True, boards_per_fence=1, last_rows=None):
     L = ['# 16.9 测试节', '', '三、教学目标', '- 学生能说出电流的方向。', '- 学生能由实物连接抽象出电路图并作出解释。', '',
          '四、教学重难点', '重点：电流方向。', '', '### 环节一 情境导入（约5分钟）', '内容。', '',
          '### 环节二 新授（约30分钟）', '内容。', '', '### 环节三 小结（约5分钟）', '内容。', '']
     if note:
         L += ['〔板书｜板1·1〕', '']
     L.append('## 板书完整设计')
-    for b in range(boards):
+    b = 0
+    while b < boards:
         L.append(BT * 3 + 'board')
         L.append('# 16.9 测试节')
-        L.append('## 板%d（主板）' % (b + 1))
-        L.append('一、测试知识块')
-        for r in range(rows - 1):
-            L.append('行%d：内容' % (r + 1))
+        for k in range(b, min(b + boards_per_fence, boards)):
+            r_n = last_rows if (last_rows is not None and k == boards - 1) else rows
+            L.append('## 板%d（主板）' % (k + 1))
+            L.append('一、测试知识块')
+            for r in range(r_n - 1):
+                L.append('行%d：内容' % (r + 1))
         L.append(BT * 3)
         L.append('')
+        b += boards_per_fence
     return NL.join(L)
 
 
@@ -241,6 +245,14 @@ def lesson_tests(root, ws):
     m2 = os.path.join(mdd, name + '.md')
     open(m2, 'w', encoding='utf-8').write(base_md(boards=1, rows=9))
     run('负样本：某块行数>8', 1, m2, docx)
+
+    m2b = os.path.join(mdd, name + '.md')
+    open(m2b, 'w', encoding='utf-8').write(base_md(boards=2, boards_per_fence=2, rows=8))
+    run('正样本：一围栏两板（各8行）', 0, m2b, docx)
+
+    m2c = os.path.join(mdd, name + '.md')
+    open(m2c, 'w', encoding='utf-8').write(base_md(boards=2, boards_per_fence=2, rows=4, last_rows=9))
+    run('负样本：一围栏两板其一>8行', 1, m2c, docx)
 
     m3 = os.path.join(mdd, name + '.md')
     open(m3, 'w', encoding='utf-8').write(base_md())

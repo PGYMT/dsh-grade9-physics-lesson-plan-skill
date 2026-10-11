@@ -1,12 +1,12 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 8.12.0
+version: 8.13.0
 description: Use when asked to generate or revise a Grade 9 physics lesson plan (九年级物理教案) from a Seewo .enbx, per the saved 教案生成要求, or to add pages to an .enbx (改课件/加页). Defaults to 40 min/period; outputs only the 详案/逐字稿 (Markdown + Word) for new and practice lessons. Research-first via the 教学资源取件手册, runs check_research.py + check_lesson.py before delivery; can add native-text pages (click-to-reveal answers) to an .enbx copy, original untouched. Not for 'how do I use this skill'.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v8.12.0
+> 版本：v8.13.0
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 
 ## 1. 何时触发
@@ -26,7 +26,7 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 - 实验条件：默认“仅多媒体”；不出“学生分组实验”版
 - 稿型：只出详案/逐字稿（1 份 md＋1 份 docx）
 - 板书：最多 2 块小黑板，每块 ≤8 行、每行 ≤14 字
-- 落位：docx 放章节根级、md 放 md文件/；文件名“<节号><节名>-<课时标识>-<版本>-详案”（多课时用“第N课时”、单课时用“1课时”）；写文件前先用整理脚本声明目的地（见 04 §5）
+- 落位：docx 放章节根级、md 放 md文件/；文件名“<节号><节名>-<课时标识>-<实验条件版本>-详案”（多课时用“第N课时”、单课时用“1课时”；练习课/讲评课用“<节号><节名>-练习课-详案”）；写文件前先用整理脚本声明目的地（见 04 §5）
 - 联网调研：默认允许且必做；检索到的可用内容落地存 08-网络资源/（能下载的原件优先，不能下载的存正文快照 .md）
 
 缺哪项问哪项，其余不重复问：
@@ -86,7 +86,7 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 
 ## 5. 详细要求在哪（按需读取）
 
-新授课：SKILL→01→02→05；改课件才加 06；03 仅要文献论据时读。
+新授课：SKILL→01→02→05→07；改课件才加 06；03 仅要文献论据时读。
 
 | 要做的事 | 读哪里 |
 |---|---|
@@ -111,4 +111,4 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 - 运行入口：~/.dsh/skills/generate-9th-grade-physics-lesson-plan，是指向权威源的软链，勿直接改。
 - DSH 仓库 .agents/skills/ 下的旧副本已移除，别再往那儿放。
 - 改完按 04 校验，并跑 sync_checklist.py 与 skill_link.py verify。
-- 课件修改脚本在 06-工具与提示词/教程/（build_enbx_native_pages.py、enbx_verify2.ps1、enbx_shot_ocr.py、expected_pages.json），索引见 06 §7。
+- 课件修改脚本在 06-工具与提示词/教程/（build_enbx_native_pages.py、enbx_verify2.ps1、enbx_shot_ocr.py、expected_pages.json、extract_enbx.py、extract_video_frames.py），索引见 06 §7。

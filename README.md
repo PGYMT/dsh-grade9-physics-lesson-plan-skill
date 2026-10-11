@@ -1,8 +1,8 @@
 # dsh-grade9-physics-lesson-plan-skill
 
-> 版本：v8.12.0
+> 版本：v8.13.0
 
-九年级物理教案生成 Skill，基于希沃白板 `.enbx` 或类似课件生成/修改教案。本仓库是技能文件的**权威源**（`SKILL.md` + `references/01–06` + 本说明）；运行入口 `~/.dsh/skills/generate-9th-grade-physics-lesson-plan` 是指向本仓库本地克隆的软链。
+九年级物理教案生成 Skill，基于希沃白板 `.enbx` 或类似课件生成/修改教案。本仓库是技能文件的**权威源**（`SKILL.md` + `references/01–07` + 本说明）；运行入口 `~/.dsh/skills/generate-9th-grade-physics-lesson-plan` 是指向本仓库本地克隆的软链。
 
 ## 功能特点
 
@@ -53,6 +53,8 @@
 ## 版本记录
 
 完整变更记录见 references/04-技能维护规范.md §6。高层里程碑：
+
+- v8.13.0：修 6 遍审查发现的缺陷——check_lesson.py 改按「## 板N」计板书行数（不再把一围栏两块合起来误判）、两个校验脚本输出带项号、练习课命名与校验正则统一、07 补关键维 0 分的等级兜底，并同步各文件版本与口径。
 
 - v8.12.0：采纳《网络资源参考价值评价维度》（新增 references/07）——可用性门槛＋分类型有效性打分（甲/乙/丙），中断改按有效数（甲＋乙）；check_research.py 增「逐份判定」块与有效数校验。
 

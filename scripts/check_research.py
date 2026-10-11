@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_research.py — 备课调研完成度外部校验（v8.12.0，纯标准库）。
+"""check_research.py — 备课调研完成度外部校验（v8.13.0，纯标准库）。
 
 用法：
   python3 scripts/check_research.py --workspace DIR --chapter 章节 --section 节号节名 --summary 摘要.md
@@ -50,7 +50,7 @@ RESULTS = []
 
 def item(name, ok, detail=''):
     RESULTS.append((name, ok, detail))
-    print('  [%s] %s%s' % ('PASS' if ok else 'FAIL', name, ('  ' + detail) if detail else ''))
+    print('  [%s] 第%d项 %s%s' % ('PASS' if ok else 'FAIL', len(RESULTS), name, ('  ' + detail) if detail else ''))
 
 
 def warn(name, detail=''):

@@ -3,7 +3,7 @@
 """check_structure.py — 教案技能结构一致性校验（v1.0，2026-09-30）。
 
 校验六类：
-  1. 版本号五处一致：SKILL.md frontmatter、SKILL.md 正文首行、01–06 文件头、README.md、DEPENDENCIES.md。
+  1. 版本号一致：SKILL.md frontmatter、SKILL.md 正文首行、references/01–07 文件头、README.md、DEPENDENCIES.md。
   2. 脚本名单三处一致：check_deps.py 的 WS_SCRIPTS、references/04 的脚本表与校验清单、scripts/dist/ 文件。
   3. SKILL.md §5 索引表指向的文件都存在。
   4. 正文与工作区生成物一致：教案生成要求提示词.md 含 01/02/06 正文；教学研究参考.md＝03；
@@ -84,10 +84,10 @@ def main():
     a = ap.parse_args()
     ws = a.workspace
 
-    print('== 1. 版本号五处一致 ==')
+    print('== 1. 版本号一致 ==')
     v = version_places()
     vals = {x for x in v.values() if x}
-    check('版本号五处一致', len(vals) == 1 and None not in v.values(),
+    check('版本号一致', len(vals) == 1 and None not in v.values(),
           '; '.join('%s=v%s' % (k, v[k]) for k in sorted(v)))
 
     print('== 2. 脚本名单三处一致 ==')

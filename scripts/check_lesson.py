@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_lesson.py — 教案成品·板书规格外部校验（v8.10.0，纯标准库）。
+"""check_lesson.py — 教案成品·板书规格外部校验（v8.13.0，纯标准库）。
 
 用法：
   python3 scripts/check_lesson.py --docx 详案.docx --md 详案.md [--skill SKILL.md]
 
-失败项 6 项（影响退出码）：
+失败项 7 项（影响退出码；每项在输出里带连续「第N项」，供自检回报引用）：
   1. board 块数 ≤2（## 板N 与 board 围栏数双测）；
-  2. 每块实际书写行 ≤8（不含 #/## 标题与空行）；
-  3. docx 有内嵌板书图，且本次未向 04-教案/<章节>/板书图/ 新增文件；
-  4. docx 末尾生成信息块存在，版本串＝SKILL.md frontmatter（读不到 SKILL 时跳过）；
-  5. 〔板书｜…〕 段落为红色样式（该 md 没有 board 块时跳过）；
-  6. 文件名符合现行命名规则。
+  2. 每块实际书写行 ≤8（块＝「## 板N」；围栏内没有板N 时整个围栏算一块）；
+  3. docx 有内嵌板书图；
+  4. 本次未向 04-教案/<章节>/板书图/ 新增板书图；
+  5. docx 末尾生成信息块存在，版本串＝SKILL.md frontmatter（读不到 SKILL 时跳过）；
+  6. 〔板书｜…〕 段落为红色样式（该 md 没有 board 块时跳过）；
+  7. 文件名符合现行命名规则。
 提示项 5 项（不影响退出码）：每行字数 ≤14、科学思维 ≥2 类、科学探究 ≥2 类、目标单句 ≤40 字、各环节用时求和＝40。
 视觉层：把内嵌板书图导出并打印路径，供模型 read_image 复核；--export-dir（或 JIAOAN_EXPORT_DIR）指定导出目录，缺省临时目录，指定目录不可写时自动退回临时目录。
 退出码：0=全绿；1=有失败项。
@@ -38,7 +39,7 @@ RESULTS = []
 
 def item(name, ok, detail=''):
     RESULTS.append((name, ok, detail))
-    print('  [%s] %s%s' % ('PASS' if ok else 'FAIL', name, ('  ' + detail) if detail else ''))
+    print('  [%s] 第%d项 %s%s' % ('PASS' if ok else 'FAIL', len(RESULTS), name, ('  ' + detail) if detail else ''))
 
 
 def warn(name, detail=''):
@@ -68,14 +69,26 @@ def parse_boards(md):
     return blocks
 
 
-def board_rows(block):
-    rows = []
+def board_units(block):
+    units = []
+    cur = None
     for ln in block:
         s = ln.strip()
+        if HEAD_RE.match(s):
+            cur = []
+            units.append(cur)
+            continue
         if not s or s.startswith('#'):
             continue
-        rows.append(s)
-    return rows
+        if cur is None:
+            cur = []
+            units.append(cur)
+        cur.append(s)
+    return [u for u in units if u]
+
+
+def board_rows(block):
+    return [r for u in board_units(block) for r in u]
 
 
 def actual_chars(s):
@@ -156,9 +169,9 @@ def main():
          '围栏 %d，##板N %d' % (len(blocks), heads))
 
     print('== 2. 每块行数 <=8 ==')
-    rows = [board_rows(b) for b in blocks]
-    worst = max([len(r) for r in rows], default=0)
-    item('每块实际书写行 <=8', worst <= 8, '最多 %d 行' % worst)
+    units = [u for b in blocks for u in board_units(b)]
+    worst = max([len(u) for u in units], default=0)
+    item('每块实际书写行 <=8', worst <= 8, '最多 %d 行／共 %d 块' % (worst, len(units)))
 
     print('== 3. docx 内嵌板书图 + 未单独落盘 ==')
     names, doc, styles, media = docx_parts(docx_path)
