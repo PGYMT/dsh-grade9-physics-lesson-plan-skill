@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""run_tests.py — check_research.py / check_lesson.py 负样本自检壳（v8.10.0，纯标准库）。
+"""run_tests.py — check_research.py / check_lesson.py 负样本自检壳（v8.11.0，纯标准库）。
 
 用法：
   python3 scripts/tests/run_tests.py [--workspace DIR]
 
-check_research 用 5 份故意违规摘要（覆盖失败项 1-5）＋1 份合格摘要；
+check_research 用 6 份故意违规摘要（覆盖失败项 1-5、7）＋2 份合格摘要（常规；不达标但已出《人工取件清单》）；
 check_lesson 用 7 份故意违规 md/docx（覆盖失败项 1-6）＋1 份合格样本。
 docx 样本用工作区 00-模板与规范/教案docx生成脚本-v9.py 现场生成再拆改，不手搓 OOXML。
 退出码：0=全部符合预期；1=有样本未被判失败或正样本被误判。
@@ -20,12 +20,23 @@ import tempfile
 import zipfile
 
 BT = chr(96)
+NL = chr(10)
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(os.path.dirname(HERE))
 CHECK_RESEARCH = os.path.join(SKILL_DIR, 'scripts', 'check_research.py')
 CHECK_LESSON = os.path.join(SKILL_DIR, 'scripts', 'check_lesson.py')
 SKILL_MD = os.path.join(SKILL_DIR, 'SKILL.md')
 FAILS = []
+
+# 合格样本的正文：非空白字符数远高于 400，且含内容标记，用于通过失败项 7 的正文底线。
+BODY = (NL.join([
+    '## 教学过程',
+    '教师：请看课件第3页，先判断电压表应该并联还是串联接入电路。',
+    '学生：并联在被测用电器两端，电流从正接线柱流入、负接线柱流出。',
+    '电压表读数：先看量程，再看分度值，0～3 V 分度值 0.1 V，0～15 V 分度值 0.5 V。',
+    '实验结论：只有一个用电器的电路中，用电器两端电压等于电源两端电压。',
+    '板书：一、电压；二、电压表；三、使用规则。',
+]) + NL) * 6
 
 
 def expect(tag, want, cmd):
@@ -43,24 +54,36 @@ def expect(tag, want, cmd):
     return p
 
 
-def build_ws(root):
+def build_ws(root, empty=()):
+    """写一个最小工作区；empty 里的类型写成空壳文件（正文为空）。返回 ws、章节、各类文件路径。"""
     ws = os.path.join(root, 'ws')
     ch = '第十六章-电压 电阻'
     base = os.path.join(ws, '08-网络资源')
     for d in ['优秀教案/' + ch + '/md文件', '优秀课件PPT/' + ch + '/md文件',
               '同步优学/九年级上册/' + ch + '/md文件', '板书设计参考/md文件']:
         os.makedirs(os.path.join(base, d), exist_ok=True)
+    files = {'教案': [], '课件': [], '练习': [], '导学案': [], '板书参考': []}
+    def put(typ, rel, body):
+        p = os.path.join(base, rel)
+        open(p, 'w', encoding='utf-8').write(body)
+        files[typ].append(p)
     for i in (1, 2, 3):
-        open(os.path.join(base, '优秀教案', ch, 'md文件', '16.9测试节-教案-%d-21世纪教育网-2026-10-11.md' % i), 'w').write('x')
-        open(os.path.join(base, '优秀课件PPT', ch, 'md文件', '16.9测试节-课件-%d-21世纪教育网-2026-10-11.md' % i), 'w').write('x')
-        open(os.path.join(base, '同步优学', '九年级上册', ch, 'md文件', '16.9测试节-练习-%d-2026-10-11.md' % i), 'w').write('x')
+        put('教案', '优秀教案/%s/md文件/16.9测试节-教案-%d-21世纪教育网-2026-10-11.md' % (ch, i),
+            '' if '教案' in empty else BODY)
+        put('课件', '优秀课件PPT/%s/md文件/16.9测试节-课件-%d-21世纪教育网-2026-10-11.md' % (ch, i),
+            '' if '课件' in empty else BODY)
+        put('练习', '同步优学/九年级上册/%s/md文件/16.9测试节-练习-%d-2026-10-11.md' % (ch, i),
+            '' if '练习' in empty else BODY)
     for i in (1, 2):
-        open(os.path.join(base, '优秀教案', ch, 'md文件', '16.9测试节-学案-%d-2026-10-11.md' % i), 'w').write('x')
-        open(os.path.join(base, '板书设计参考', 'md文件', '16.9测试节-板书-%d-2026-10-11.md' % i), 'w').write('x')
-    open(os.path.join(base, '备课缺口表.md'), 'w').write(
-        '# 备课缺口表\n\n| 章节 | 节号+节名 | 教案 | 课件 | 练习 | 导学案 | 板书 | 视频 | 缺口摘要 | 最近更新 |\n'
-        '|---|---|---|---|---|---|---|---|---|---|\n| 第十六章-电压 电阻 | 16.9测试节 | 3—5 / 3 | 3—5 / 3 | 3—5 / 3 | >=2 / 2 | >=2 / 2 | 可选 / 0 | 缺 板书 | 2026-10-11 |\n')
-    return ws, ch
+        put('导学案', '优秀教案/%s/md文件/16.9测试节-学案-%d-2026-10-11.md' % (ch, i),
+            '' if '导学案' in empty else BODY)
+        put('板书参考', '板书设计参考/md文件/16.9测试节-板书-%d-2026-10-11.md' % i,
+            '' if '板书参考' in empty else BODY)
+    open(os.path.join(base, '备课缺口表.md'), 'w', encoding='utf-8').write(
+        '# 备课缺口表' + NL + NL + '| 章节 | 节号+节名 | 教案 | 课件 | 练习 | 导学案 | 板书 | 视频 | 缺口摘要 | 最近更新 |' + NL
+        + '|---|---|---|---|---|---|---|---|---|---|' + NL
+        + '| 第十六章-电压 电阻 | 16.9测试节 | 3—5 / 3 | 3—5 / 3 | 3—5 / 3 | >=2 / 2 | >=2 / 2 | 可选 / 0 | 缺 板书 | 2026-10-11 |' + NL)
+    return ws, ch, files
 
 
 def dims(bad=None, nolink=None):
@@ -70,29 +93,30 @@ def dims(bad=None, nolink=None):
             continue
         link = '' if d == nolink else '来源 https://example.com/%d 抓取日期 2026-10-11；' % i
         lines.append('- %s：%s做法：分组；采用。' % (d, link))
-    return '\n'.join(lines)
+    return NL.join(lines)
 
 
-def summary(drop_hash=False, low_jiao=False, bad=None, nolink=None):
+def summary(drop_hash=False, low_jiao=False, bad=None, nolink=None, daoxue=('2', '2', '2', '2')):
     s = ['# 16.9 测试节-调研摘要-20261011', '', '## 七维度', dims(bad, nolink), '', '## 份数统计',
-         '教案=%s/3/5/5/官方/达标' % ('1' if low_jiao else '3'),
-         '课件=3/3/4/4/精品/达标', '练习=3/3/3/3/官方/达标', '导学案=2/2/2/2/官方/达标',
-         '板书参考=2/2/2/2/精品/达标', '视频=0/可选/0/0/普通/达标', '']
+         '教案=%s/3/3/3/官方/达标' % ('1' if low_jiao else '3'),
+         '课件=3/3/3/3/精品/达标', '练习=3/3/3/3/官方/达标',
+         '导学案=%s/%s/%s/%s/官方/达标' % daoxue,
+         '板书参考=2/2/2/2/精品/达标', '视频=0/可选/0/0/不适用/不作硬要求', '']
     if not drop_hash:
         s += ['## 哈希清单', 'abc123def456abcd 16.9测试节-教案-1.md', '']
     s += ['## 来源映射', 'https://example.com/0 -> 16.9测试节-教案-1.md', '',
           '## 失败站点', '- example.org | /x | 403 | 1 | 2026-10-11 | https://example.com/0', '']
-    return '\n'.join(s)
+    return NL.join(s)
 
 
 def research_tests(root):
     print('===== check_research.py =====')
-    ws, ch = build_ws(root)
+    ws, ch, files = build_ws(root)
     sec = '16.9测试节'
     sd = os.path.join(ws, '08-网络资源', '优秀教案', ch, 'md文件')
     good = os.path.join(sd, '16.9测试节-调研摘要-20261011.md')
-    open(good, 'w', encoding='utf-8').write(summary())
     base = [sys.executable, CHECK_RESEARCH, '--workspace', ws, '--chapter', ch, '--section', sec]
+    open(good, 'w', encoding='utf-8').write(summary())
     expect('正样本（应 PASS）', 0, base + ['--summary', good])
     for tag, text in [
         ('缺七维度', summary(bad='过渡语')),
@@ -104,10 +128,26 @@ def research_tests(root):
         open(p, 'w', encoding='utf-8').write(text)
         expect('负样本：' + tag, 1, base + ['--summary', p])
     lesson = os.path.join(sd, '16.9测试节-1课时-仅多媒体-详案.md')
-    open(lesson, 'w', encoding='utf-8').write('九、参考资料\nhttps://example.com/not-in-mapping\n')
+    open(lesson, 'w', encoding='utf-8').write('九、参考资料' + NL + 'https://example.com/not-in-mapping' + NL)
     os.remove(good)
     open(good, 'w', encoding='utf-8').write(summary())
     expect('负样本：教案来源不可溯源', 1, base + ['--lesson', lesson])
+
+    saved = {}
+    for p in files['教案']:
+        saved[p] = open(p, encoding='utf-8').read()
+        open(p, 'w', encoding='utf-8').write('')
+    expect('负样本：可用数超过正文达标数（空壳）', 1, base + ['--summary', good])
+    for p, t in saved.items():
+        open(p, 'w', encoding='utf-8').write(t)
+
+    short = os.path.join(sd, '16.9测试节-调研摘要-20261011-short.md')
+    open(short, 'w', encoding='utf-8').write(summary(daoxue=('2', '2', '2', '1')))
+    expect('负样本：某类可用不足且无《人工取件清单》', 1, base + ['--summary', short])
+    manual = os.path.join(sd, '16.9测试节-人工取件清单-20261011.md')
+    open(manual, 'w', encoding='utf-8').write('# 人工取件清单' + NL)
+    expect('正样本：某类不足但已出《人工取件清单》', 0, base + ['--summary', short])
+    os.remove(manual)
 
 
 def base_md(boards=1, rows=4, note=True):
@@ -126,7 +166,7 @@ def base_md(boards=1, rows=4, note=True):
             L.append('行%d：内容' % (r + 1))
         L.append(BT * 3)
         L.append('')
-    return '\n'.join(L)
+    return NL.join(L)
 
 
 def rewrite_docx(src, dst, doc_repl=None, styles_repl=None, drop_media=False):
