@@ -40,6 +40,7 @@ SKILL = resolve_skill(sys.argv[1:])
 OUT = os.path.join(WS, '06-工具与提示词/提示词/md文件/教案生成要求提示词.md')
 OUT_REF = os.path.join(WS, '06-工具与提示词/提示词/md文件/教学研究参考.md')
 OUT_IDX = os.path.join(WS, '08-网络资源/教学资源取件手册.md')
+OUT_DIM = os.path.join(WS, '08-网络资源/网络资源参考价值评价维度.md')
 def rd(p): return open(p, encoding="utf-8").read().rstrip()
 def skill_version():
     m = re.search(r"^version:\s*([0-9][^\s]*)\s*$", rd(os.path.join(SKILL, "SKILL.md")), re.M)
@@ -75,6 +76,7 @@ body_txt = body("references/01-教案生成要求.md") + NL + NL + body("referen
 open(OUT, "w", encoding="utf-8").write(NL.join(head) + NL + body_txt + NL)
 print("OK", OUT, os.path.getsize(OUT), "skill v" + ver)
 for rel, out in [("references/03-教学研究参考.md", OUT_REF),
-                 ("references/05-教学资源网站.md", OUT_IDX)]:
+                 ("references/05-教学资源网站.md", OUT_IDX),
+                 ("references/07-网络资源参考价值评价维度.md", OUT_DIM)]:
     copy_verbatim(rel, out)
     print("OK", out, os.path.getsize(out))

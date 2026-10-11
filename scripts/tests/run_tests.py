@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""run_tests.py — check_research.py / check_lesson.py 负样本自检壳（v8.11.0，纯标准库）。
+"""run_tests.py — check_research.py / check_lesson.py 负样本自检壳（v8.12.0，纯标准库）。
 
 用法：
   python3 scripts/tests/run_tests.py [--workspace DIR]
 
-check_research 用 6 份故意违规摘要（覆盖失败项 1-5、7）＋2 份合格摘要（常规；不达标但已出《人工取件清单》）；
+check_research 用 8 份故意违规摘要（覆盖失败项 1-5、7、8）＋2 份合格摘要
+（常规；某类全丙但已出《人工取件清单》）；
 check_lesson 用 7 份故意违规 md/docx（覆盖失败项 1-6）＋1 份合格样本。
 docx 样本用工作区 00-模板与规范/教案docx生成脚本-v9.py 现场生成再拆改，不手搓 OOXML。
 退出码：0=全部符合预期；1=有样本未被判失败或正样本被误判。
@@ -28,7 +29,7 @@ CHECK_LESSON = os.path.join(SKILL_DIR, 'scripts', 'check_lesson.py')
 SKILL_MD = os.path.join(SKILL_DIR, 'SKILL.md')
 FAILS = []
 
-# 合格样本的正文：非空白字符数远高于 400，且含内容标记，用于通过失败项 7 的正文底线。
+# 合格样本的正文：非空白字符数远高于 400，且含内容标记，用于通过「非空壳」的机械线。
 BODY = (NL.join([
     '## 教学过程',
     '教师：请看课件第3页，先判断电压表应该并联还是串联接入电路。',
@@ -37,6 +38,15 @@ BODY = (NL.join([
     '实验结论：只有一个用电器的电路中，用电器两端电压等于电源两端电压。',
     '板书：一、电压；二、电压表；三、使用规则。',
 ]) + NL) * 6
+
+NAMES = {
+    '教案': ['16.9测试节-教案-%d-21世纪教育网-2026-10-11.md' % i for i in (1, 2, 3)],
+    '课件': ['16.9测试节-课件-%d-21世纪教育网-2026-10-11.md' % i for i in (1, 2, 3)],
+    '练习': ['16.9测试节-练习-%d-2026-10-11.md' % i for i in (1, 2, 3)],
+    '导学案': ['16.9测试节-学案-%d-2026-10-11.md' % i for i in (1, 2)],
+    '板书参考': ['16.9测试节-板书-%d-2026-10-11.md' % i for i in (1, 2)],
+}
+SRC = {'教案': '官方', '课件': '精品', '练习': '官方', '导学案': '官方', '板书参考': '精品'}
 
 
 def expect(tag, want, cmd):
@@ -96,12 +106,26 @@ def dims(bad=None, nolink=None):
     return NL.join(lines)
 
 
-def summary(drop_hash=False, low_jiao=False, bad=None, nolink=None, daoxue=('2', '2', '2', '2')):
+def judge_rows(mode=None):
+    """mode: None=全部乙；none 由调用方略去块；miss=少一条教案行；bing=导学案全部丙。"""
+    rows = []
+    for t, ns in NAMES.items():
+        for n in ns:
+            if mode == 'miss' and t == '教案' and n == NAMES['教案'][0]:
+                continue
+            g = '丙' if (mode == 'bing' and t == '导学案') else '乙'
+            score = '12/18' if t == '教案' else ('11/16' if t == '课件' else ('9/14' if t in ('练习', '导学案') else '8/12'))
+            rows.append('- %s | %s | %s | 人教版 | 过 | %s | %s | 借鉴点：%s——采用 | 不参考原因：无' % (n, t, SRC[t], score, g, t))
+    return rows
+
+
+def summary(drop_hash=False, low_jiao=False, bad=None, nolink=None, judge=None):
     s = ['# 16.9 测试节-调研摘要-20261011', '', '## 七维度', dims(bad, nolink), '', '## 份数统计',
          '教案=%s/3/3/3/官方/达标' % ('1' if low_jiao else '3'),
-         '课件=3/3/3/3/精品/达标', '练习=3/3/3/3/官方/达标',
-         '导学案=%s/%s/%s/%s/官方/达标' % daoxue,
+         '课件=3/3/3/3/精品/达标', '练习=3/3/3/3/官方/达标', '导学案=2/2/2/2/官方/达标',
          '板书参考=2/2/2/2/精品/达标', '视频=0/可选/0/0/不适用/不作硬要求', '']
+    if judge != 'none':
+        s += ['## 逐份判定'] + judge_rows(judge) + ['']
     if not drop_hash:
         s += ['## 哈希清单', 'abc123def456abcd 16.9测试节-教案-1.md', '']
     s += ['## 来源映射', 'https://example.com/0 -> 16.9测试节-教案-1.md', '',
@@ -123,6 +147,9 @@ def research_tests(root):
         ('来源无链接', summary(nolink='讲授思路')),
         ('缺哈希清单', summary(drop_hash=True)),
         ('份数不足', summary(low_jiao=True)),
+        ('缺逐份判定块', summary(judge='none')),
+        ('逐份判定漏件', summary(judge='miss')),
+        ('某类全丙且无《人工取件清单》', summary(judge='bing')),
     ]:
         p = os.path.join(sd, '16.9测试节-调研摘要-20261011-bad.md')
         open(p, 'w', encoding='utf-8').write(text)
@@ -141,12 +168,11 @@ def research_tests(root):
     for p, t in saved.items():
         open(p, 'w', encoding='utf-8').write(t)
 
-    short = os.path.join(sd, '16.9测试节-调研摘要-20261011-short.md')
-    open(short, 'w', encoding='utf-8').write(summary(daoxue=('2', '2', '2', '1')))
-    expect('负样本：某类可用不足且无《人工取件清单》', 1, base + ['--summary', short])
+    bing = os.path.join(sd, '16.9测试节-调研摘要-20261011-bing.md')
+    open(bing, 'w', encoding='utf-8').write(summary(judge='bing'))
     manual = os.path.join(sd, '16.9测试节-人工取件清单-20261011.md')
     open(manual, 'w', encoding='utf-8').write('# 人工取件清单' + NL)
-    expect('正样本：某类不足但已出《人工取件清单》', 0, base + ['--summary', short])
+    expect('正样本：某类全丙但已出《人工取件清单》', 0, base + ['--summary', bing])
     os.remove(manual)
 
 

@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_research.py — 备课调研完成度外部校验（v8.11.0，纯标准库）。
+"""check_research.py — 备课调研完成度外部校验（v8.12.0，纯标准库）。
 
 用法：
   python3 scripts/check_research.py --workspace DIR --chapter 章节 --section 节号节名 --summary 摘要.md
   python3 scripts/check_research.py --workspace DIR --chapter 章节 --section 节号节名 --lesson 详案.md
 
-失败项 7 项（影响退出码）：
+失败项 8 项（影响退出码）：
   1. 摘要文件存在，且七维度逐条出现；
   2. 七维度每条都带 http(s) 链接与抓取日期（标「在线来源，未落盘」也照样要链接与日期）；
   3. 摘要含「哈希清单」块；
   4. 教案/课件/练习/导学案/板书参考五类去重后达标，且每类来源类型为「官方」或「精品」；
   5. 摘要「已落盘」数与 08-网络资源/ 实际文件对账（实际少于摘要才 FAIL）；
   6. 传了 --lesson 时，教案「九、参考资料」的每个来源都能在「来源映射」里落到本地文件或标「在线来源，未落盘」；
-  7. 摘要「可用」数不得超过实际正文达标文件数；「可用」低于下限时必须已出《人工取件清单》。
+  7. 摘要含「逐份判定」块，覆盖全部可用件（=正文达标文件），每行 >=9 字段，等级取 甲/乙/丙/—；
+  8. 「可用」数不超正文达标数；有效数（判定行中等级为甲或乙的件数）低于该类下限时，必须已出《人工取件清单》。
 
-正文达标底线（逐类下限，按去头部引用块后的非空白字符数）：教案/课件/练习/导学案 >= 400，板书参考 >= 100；
-且正文须命中至少 1 个内容标记（教学目标/教学过程/答案/解析/板书/导学…）。这条底线只判「有没有可读正文」，
-判不了内容对应与科学性，那是 01 §0.5 第 6 条由人判的部分。
+正文达标底线（即维度文件第 1 关第 5 条的机械线）：去掉头部引用块与首个标题后，教案/课件/练习/导学案
+非空白字符 >= 400、板书参考 >= 100，且命中至少 1 个内容标记。机械线只判「有没有可读正文」，
+判不了内容对应与科学性，也判不了分数打得对不对——那几项由人按 references/07 判。
 
-提示项 4 项（不影响退出码）：失败站点条数、缺口表是否已更新、各类候选/可用、正文未达底线的文件清单。
+提示项 5 项（不影响退出码）：失败站点条数、缺口表是否已更新、各类候选/可用、正文未达底线的文件清单、有效数。
 退出码：0=全绿；1=有失败项。
 """
 import argparse
@@ -39,7 +40,10 @@ FLOOR = {'教案': 400, '课件': 400, '练习': 400, '导学案': 400, '板书�
 BODY_MARKERS = ('教学目标', '学习目标', '教学过程', '教学重点', '教学难点', '重难点',
                 '板书', '导学', '预习', '答案', '解析', '例题', '练习', '探究',
                 '实验', '借鉴', '采用', '设计意图')
+GRADES = ('甲', '乙', '丙', '—')
+EFFECTIVE = ('甲', '乙')
 MANUAL_LIST = '人工取件清单'
+JUDGE_BLOCK = '逐份判定'
 
 RESULTS = []
 
@@ -134,7 +138,6 @@ def match_kind(basename, kind):
 
 
 def collect_paths(root, sec_no, kind=None):
-    """按与计数同一套过滤，返回 {去扩展名: 路径}。"""
     found = {}
     for p in walk_files(root):
         b = os.path.basename(p)
@@ -169,7 +172,6 @@ def actual_counts(ws, chapter, sec_no):
 
 
 def content_body(path):
-    """去掉首个 # 标题行与全部 > 引用头（快照头部）后的正文。"""
     lines = []
     for ln in read(path).splitlines():
         if ln.startswith('>'):
@@ -187,6 +189,38 @@ def body_ok(path, typ):
     text = content_body(path)
     chars = sum(1 for ch in text if not ch.isspace())
     return chars >= FLOOR.get(typ, 400) and any(m in text for m in BODY_MARKERS)
+
+
+def good_files(ws, chapter, sec_no):
+    """按类型返回正文达标（=可用）文件 {类型: {basename: path}}。"""
+    out = {}
+    for t, (root, kind) in resource_roots(ws, chapter).items():
+        out[t] = {os.path.basename(p): p for p in collect_paths(root, sec_no, kind).values() if body_ok(p, t)}
+    return out
+
+
+def parse_judgements(lines):
+    """解析「逐份判定」块，返回 (按类型的 文件名->等级, 字段不足/等级非法的问题清单)。"""
+    rows = {}
+    bad = []
+    if not lines:
+        return rows, bad
+    for ln in lines:
+        s = ln.strip().lstrip('-').lstrip('*').strip()
+        if '|' not in s:
+            continue
+        parts = [p.strip() for p in s.split('|')]
+        if len(parts) < 9:
+            bad.append('字段%d(%s)' % (len(parts), (parts[0] or '?')[:24]))
+            continue
+        typ = parts[1]
+        if typ not in COUNT_TYPES:
+            continue
+        if parts[6] not in GRADES:
+            bad.append('%s(等级=%s)' % (parts[0][:24], parts[6]))
+            continue
+        rows.setdefault(typ, {})[parts[0]] = parts[6]
+    return rows, bad
 
 
 def find_manual_list(ws, section):
@@ -314,28 +348,36 @@ def main():
             bad6.append(lp)
         item('教案来源可溯源', not bad6, '／'.join(sorted(set(bad6))))
 
-    print('== 7. 可用数不超正文达标数，且不达标须有《人工取件清单》 ==')
-    roots = resource_roots(ws, a.chapter)
+    print('== 7. 逐份判定块与有效数 ==')
+    good = good_files(ws, a.chapter, sec_no)
     manual = find_manual_list(ws, a.section)
-    bad7 = []
-    shells = []
-    mech_all = {}
+    jrows, jbad = parse_judgements(find_block(blocks, JUDGE_BLOCK))
+    bad7 = list(jbad)
+    if find_block(blocks, JUDGE_BLOCK) is None:
+        bad7.append('缺「逐份判定」块')
+    for t in COUNT_TYPES:
+        if not good.get(t):
+            continue
+        miss = set(good[t]) - set(jrows.get(t, {}))
+        if miss:
+            bad7.append('%s缺判定行%d条' % (t, len(miss)))
+    item('逐份判定块覆盖可用件且字段等级合法', not bad7, '／'.join(bad7))
+
+    print('== 8. 有效数与中断阈值 ==')
+    effective = {}
+    bad8 = []
     for t in COUNT_TYPES:
         parts = rows.get(t)
         if not parts or len(parts) < 6 or parts[5] == '不适用':
             continue
-        root, kind = roots[t]
-        files = list(collect_paths(root, sec_no, kind).values())
-        good = [p for p in files if body_ok(p, t)]
-        mech = len(good)
-        mech_all[t] = mech
-        shells += [os.path.basename(p) for p in files if p not in good]
+        effective[t] = sum(1 for g in jrows.get(t, {}).values() if g in EFFECTIVE)
         claimed = to_int(parts[3])
+        mech = len(good.get(t, {}))
         if claimed > mech:
-            bad7.append('%s(可用%d>正文达标%d)' % (t, claimed, mech))
-        if claimed < LOWER[t] and not manual:
-            bad7.append('%s(可用%d<%d且无《人工取件清单》)' % (t, claimed, LOWER[t]))
-    item('可用数不超正文达标数且不达标有人工取件清单', not bad7, '／'.join(bad7))
+            bad8.append('%s(可用%d>正文达标%d)' % (t, claimed, mech))
+        if effective[t] < LOWER[t] and not manual:
+            bad8.append('%s(有效%d<%d且无《人工取件清单》)' % (t, effective[t], LOWER[t]))
+    item('可用数不超正文达标数且有效数达标或已出清单', not bad8, '／'.join(bad8))
 
     print('== 提示项（不影响退出码）==')
     fails = find_block(blocks, '失败站点')
@@ -344,8 +386,13 @@ def main():
     for t in COUNT_TYPES:
         parts = rows.get(t)
         if parts and len(parts) >= 4:
-            usable.append('%s=%s/%s(正文达标%d)' % (t, parts[2], parts[3], mech_all.get(t, 0)))
-    warn('各类候选/可用', '，'.join(usable) if usable else '无')
+            usable.append('%s=候选%s/可用%s(正文达标%d/有效%d)' % (t, parts[2], parts[3], len(good.get(t, {})), effective.get(t, 0)))
+    warn('各类候选/可用/有效', '，'.join(usable) if usable else '无')
+    shells = []
+    for t, (root, kind) in resource_roots(ws, a.chapter).items():
+        for p in collect_paths(root, sec_no, kind).values():
+            if not body_ok(p, t):
+                shells.append(os.path.basename(p))
     warn('正文未达底线的文件（按不可用计）', '，'.join(sorted(set(shells))) if shells else '无')
     if manual:
         warn('已找到《人工取件清单》', manual)

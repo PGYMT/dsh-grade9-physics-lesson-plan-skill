@@ -7,7 +7,7 @@
   2. 脚本名单三处一致：check_deps.py 的 WS_SCRIPTS、references/04 的脚本表与校验清单、scripts/dist/ 文件。
   3. SKILL.md §5 索引表指向的文件都存在。
   4. 正文与工作区生成物一致：教案生成要求提示词.md 含 01/02/06 正文；教学研究参考.md＝03；
-     教学资源取件手册.md＝05。
+     教学资源取件手册.md＝05、网络资源参考价值评价维度.md＝07。
   5. scripts/dist/ 各副本与工作区脚本逐字节一致。
   6. 技能根两个新脚本（check_research.py、check_lesson.py）存在，且在 04 与 DEPENDENCIES 有登记。
 
@@ -24,7 +24,8 @@ import sys
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_WS = '/root/dsh-workspace/工作文件'
 REFS = ['01-教案生成要求.md', '02-教学设计细则.md', '03-教学研究参考.md',
-        '04-技能维护规范.md', '05-教学资源网站.md', '06-课件修改与排版.md']
+        '04-技能维护规范.md', '05-教学资源网站.md', '06-课件修改与排版.md',
+        '07-网络资源参考价值评价维度.md']
 
 RESULTS = []
 
@@ -119,6 +120,9 @@ def main():
           os.path.isfile(ref_p) and rd(ref_p).rstrip() == rd(os.path.join(SKILL_DIR, 'references/03-教学研究参考.md')).rstrip())
     check('教学资源取件手册.md＝05',
           os.path.isfile(idx_p) and rd(idx_p).rstrip() == rd(os.path.join(SKILL_DIR, 'references/05-教学资源网站.md')).rstrip())
+    dim_p = os.path.join(ws, '08-网络资源/网络资源参考价值评价维度.md')
+    check('网络资源参考价值评价维度.md＝07',
+          os.path.isfile(dim_p) and rd(dim_p).rstrip() == rd(os.path.join(SKILL_DIR, 'references/07-网络资源参考价值评价维度.md')).rstrip())
 
     print('== 5. dist 副本与工作区脚本逐字节一致 ==')
     for rel in scripts:

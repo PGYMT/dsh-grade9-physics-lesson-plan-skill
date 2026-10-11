@@ -1,12 +1,12 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 8.11.0
+version: 8.12.0
 description: Use when asked to generate or revise a Grade 9 physics lesson plan (九年级物理教案) from a Seewo .enbx, per the saved 教案生成要求, or to add pages to an .enbx (改课件/加页). Defaults to 40 min/period; outputs only the 详案/逐字稿 (Markdown + Word) for new and practice lessons. Research-first via the 教学资源取件手册, runs check_research.py + check_lesson.py before delivery; can add native-text pages (click-to-reveal answers) to an .enbx copy, original untouched. Not for 'how do I use this skill'.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v8.11.0
+> 版本：v8.12.0
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 
 ## 1. 何时触发
@@ -49,7 +49,7 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
    0.3 份数目标（去重后）：教案 3—5、课件 3—5、练习 3—5、导学案 ≥2、板书参考 ≥2；视频可选；每类至少 1 份官方平台人工导出件或带「精品/获奖」标签；本课确实不适用的类在《缺口表》标「不适用」。
    0.4 降级链：每站每栏目最多试 1 次；遇 403／验证码／登录墙／付费墙立刻换替代源，不重试、不硬闯。
    0.5 取件落地：能直抓的存 08-网络资源/ 对应目录（原件优先；快照存 md文件/，写明来源链接＋抓取日期＋获取程度）；先按「同一课题 docx＋md 算 1 份」归并，再算 sha256 前 16 位去重；写盘前先跑 organize.py plan --dest。
-   0.6 质量判断：逐份判可用/不可用；某类 0 份可用、或本次候选可用率 < 一半 → 生成《人工取件清单》请你获取；其余继续。本地已达标且无新增候选时不判可用率。
+   0.6 质量判断：先过可用性门槛（5 条＋正文底线），再按 references/07 分类型打分（甲/乙/丙）；有效数（甲＋乙）低于下限 → 生成《人工取件清单》请你获取；其余继续。
    0.7 出七维度借鉴清单（各条带来源链接＋采用/规避）与「分课时安排表」，**先出安排表、后出摘要**；摘要按 01 §0.5 规格落盘。
    0.8 跑调研校验：python3 /root/.dsh/skills/generate-9th-grade-physics-lesson-plan/scripts/check_research.py --workspace "<工作区>" --chapter "<章节>" --section "<节号+节名>" --summary "<摘要路径>"；把输出连同 0.7 的摘要一起给用户确认；未确认不得进入第 1 步。
    0.9 写完详案后（交付前）再跑一次：同一脚本加 --lesson "<详案.md>"，判「九、参考资料」可溯源。
@@ -94,6 +94,7 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 | 教学语言红线、板书规格、标注体系、目标叙写、教案自检清单 | references/02-教学设计细则.md |
 | 关键观点与文献 | references/03-教学研究参考.md |
 | 资源取件手册（9 章：教材/教案/导学案/课件/试题/视频/板书/文献/工具） | references/05-教学资源网站.md |
+| 网络资源可用性与有效性判定（门槛 5 条、五类打分维度与分线、适配轴、输出格式） | references/07-网络资源参考价值评价维度.md |
 | 改 .enbx 课件、课件选题与排版、课件自检、官方依据与官方 API 备选（§8／§2.7） | references/06-课件修改与排版.md |
 | 依赖清单与自举（换机器/换 DSH 必读） | DEPENDENCIES.md |
 | 目录结构、命名、同步、脚本、变更记录 | references/04-技能维护规范.md |
