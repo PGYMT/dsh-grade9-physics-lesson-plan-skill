@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""run_tests.py — check_research.py / check_lesson.py 负样本自检壳（v8.13.0，纯标准库）。
+"""run_tests.py — check_research.py / check_lesson.py 负样本自检壳（v8.14.0，纯标准库）。
 
 用法：
   python3 scripts/tests/run_tests.py [--workspace DIR]
@@ -159,6 +159,13 @@ def research_tests(root):
     os.remove(good)
     open(good, 'w', encoding='utf-8').write(summary())
     expect('负样本：教案来源不可溯源', 1, base + ['--lesson', lesson])
+
+    # D2 回归：教材「九、参考资料」写 08-网络资源/ 的实存路径（章节目录名含空格）应 PASS
+    real = '08-网络资源/优秀教案/%s/md文件/%s' % (ch, os.path.basename(files['教案'][0]))
+    open(lesson, 'w', encoding='utf-8').write('九、参考资料' + NL + real + NL)
+    expect('正样本：教案引用 08-网络资源 实存路径（章节名含空格）', 0, base + ['--lesson', lesson])
+    open(lesson, 'w', encoding='utf-8').write('九、参考资料' + NL + '08-网络资源/优秀教案/%s/md文件/不存在的文件.md' % ch + NL)
+    expect('负样本：教案引用 08-网络资源 不存在路径', 1, base + ['--lesson', lesson])
 
     saved = {}
     for p in files['教案']:

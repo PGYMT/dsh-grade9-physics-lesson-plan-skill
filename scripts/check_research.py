@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_research.py — 备课调研完成度外部校验（v8.13.0，纯标准库）。
+"""check_research.py — 备课调研完成度外部校验（v8.14.0，纯标准库）。
 
 用法：
   python3 scripts/check_research.py --workspace DIR --chapter 章节 --section 节号节名 --summary 摘要.md
@@ -44,6 +44,7 @@ GRADES = ('甲', '乙', '丙', '—')
 EFFECTIVE = ('甲', '乙')
 MANUAL_LIST = '人工取件清单'
 JUDGE_BLOCK = '逐份判定'
+LEGACY_JUDGE_BLOCK = '网络教案价值打分'
 
 RESULTS = []
 
@@ -340,7 +341,7 @@ def main():
             if any(k == u and '未落盘' in v for k, v in mapping.items()):
                 continue
             bad6.append(u)
-        for lp in re.findall(r'08-网络资源/[^\s)）>」|]+', refs):
+        for lp in re.findall(r'08-网络资源/[^\n)）>」|]+?\.(?:md|docx|pdf|pptx|ppt|txt|doc)', refs):
             if os.path.exists(os.path.join(ws, lp)):
                 continue
             if os.path.basename(lp) in ' '.join(mapping.values()):
@@ -354,7 +355,10 @@ def main():
     jrows, jbad = parse_judgements(find_block(blocks, JUDGE_BLOCK))
     bad7 = list(jbad)
     if find_block(blocks, JUDGE_BLOCK) is None:
-        bad7.append('缺「逐份判定」块')
+        if find_block(blocks, LEGACY_JUDGE_BLOCK) is not None:
+            bad7.append('检测到旧「%s」块，未升级为「逐份判定」；请按 07 §2.2–2.5 分类型打分、按 07 §6 九字段格式改写（迁移步骤见 references/04 §3）' % LEGACY_JUDGE_BLOCK)
+        else:
+            bad7.append('缺「逐份判定」块')
     for t in COUNT_TYPES:
         if not good.get(t):
             continue

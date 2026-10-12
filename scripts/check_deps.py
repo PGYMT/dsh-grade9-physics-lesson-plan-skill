@@ -24,6 +24,7 @@ WS_SCRIPTS = {
     '06-工具与提示词/教程/build_lesson_prompt.py': '由 01+02+06 生成工作区提示词与 03/05 可读版',
     '06-工具与提示词/教程/extract_video_frames.py': '课件视频抽帧与封面',
     '06-工具与提示词/教程/build_enbx_native_pages.py': '给 .enbx 副本加原生页',
+    '06-工具与提示词/教程/enbx_add_pages.py': '通用 .enbx 加页：中间插页 + 字号/高度自检',
     '06-工具与提示词/教程/enbx_verify2.ps1': 'Windows 侧打开/跳页/截图',
     '06-工具与提示词/教程/enbx_shot_ocr.py': '截图 OCR 机器层比对',
     '06-工具与提示词/教程/expected_pages.json': '课件验证预期清单',
