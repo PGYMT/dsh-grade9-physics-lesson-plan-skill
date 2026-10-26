@@ -7,7 +7,7 @@
 
 check_research 用 8 份故意违规摘要（覆盖失败项 1-5、7、8）＋2 份合格摘要
 （常规；某类全丙但已出《人工取件清单》）；
-check_lesson 用 7 份故意违规 md/docx（覆盖失败项 1-6）＋1 份合格样本。
+check_lesson 用 9 份故意违规 md/docx（覆盖失败项 1-9）＋2 份合格样本。
 docx 样本用工作区 00-模板与规范/教案docx生成脚本-v9.py 现场生成再拆改，不手搓 OOXML。
 退出码：0=全部符合预期；1=有样本未被判失败或正样本被误判。
 """
@@ -241,6 +241,9 @@ def lesson_tests(root, ws):
         return
 
     def run(tag, want, m, d):
+        if os.path.isfile(m) and os.path.isfile(d):
+            t0 = os.path.getmtime(d) - 60
+            os.utime(m, (t0, t0))
         expect(tag, want, [sys.executable, CHECK_LESSON, '--md', m, '--docx', d, '--skill', SKILL_MD])
 
     run('正样本（应 PASS）', 0, md, docx)
@@ -287,6 +290,17 @@ def lesson_tests(root, ws):
     bad = os.path.join(mdd, '随便一个名字.md')
     open(bad, 'w', encoding='utf-8').write(base_md())
     run('负样本：文件名不合规', 1, bad, docx)
+
+    m8 = os.path.join(mdd, name + '.md')
+    open(m8, 'w', encoding='utf-8').write('> 课时：1课时，40分钟。' + NL + base_md().replace('（约5分钟）', '（约6分钟）', 1))
+    run('负样本：各环节用时合计≠课时分钟', 1, m8, docx)
+
+    m9 = os.path.join(mdd, name + '.md')
+    open(m9, 'w', encoding='utf-8').write(base_md())
+    later = os.path.getmtime(docx) + 100
+    os.utime(m9, (later, later))
+    expect('负样本：md 比 docx 新（忘记重生成）', 1,
+           [sys.executable, CHECK_LESSON, '--md', m9, '--docx', docx, '--skill', SKILL_MD])
 
 
 def main():

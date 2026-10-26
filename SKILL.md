@@ -1,12 +1,12 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 8.16.0
+version: 8.17.0
 description: Use when asked to generate or revise a Grade 9 physics lesson plan (九年级物理教案) from a Seewo .enbx, per the saved 教案生成要求, or to add pages to an .enbx (改课件/加页). Defaults to 40 min/period; outputs only the 详案/逐字稿 (Markdown + Word) for new and practice lessons. Research-first via the 教学资源取件手册, runs check_research.py + check_lesson.py before delivery; can add native-text pages (click-to-reveal answers) to an .enbx copy, original untouched. Not for 'how do I use this skill'.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v8.16.0
+> 版本：v8.17.0
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 
 ## 1. 何时触发
@@ -66,7 +66,7 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 顺序恒定：**先出教案摘要 → 用户确认 → 再落课件页**；只改副本，原件逐字节不动。
 
 ### 3.2 若任务是“修订已有教案”（分支）
-读现状 → 列改动清单（位置＋原因＋影响）→ 经批准 → 旧稿备份为“-旧版” → 修改 → 重跑 02 §6 自检 → 汇报；不直接覆盖旧稿。
+读现状 → 列改动清单（位置＋原因＋影响）→ 经批准 → 旧稿备份为“-旧版” → 修改 → 重跑 02 §6 自检 → 汇报；不直接覆盖旧稿。每轮中间稿放 md文件/旧版/ 子目录、文件名不改，不参与 check_lesson；完整四步见 01 §1.6。
 
 ## 4. 硬约束（不可偏离；细节见 references）
 
@@ -83,6 +83,7 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 11. 视频：解包时每段视频抽 3—6 帧＋自带封面，先用 read_image 确认内容与大致走向。
 12. 依赖：技能根 DEPENDENCIES.md 是依赖唯一清单；换环境先跑 scripts/check_deps.py，缺失按它给的命令补。
 13. 版本标注：生成的 docx 末尾必须有生成信息块（技能版本／生成脚本／生成日期；最近一次修改版本／日期），版本从 SKILL.md frontmatter 读，读不到写「版本未知」。
+14. 物理优先于叙事：引用课件数据、写结论句前先过“引用与结论三问”（01 需求2.1）；三问有一条不过，这句删掉或降为描述，不硬写成因果。
 
 ## 5. 详细要求在哪（按需读取）
 
@@ -106,6 +107,7 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 ## 7. 维护本技能
 
 改动前先读 references/04-技能维护规范.md；按 §5 的联动判断清单，先比对权威源与本地备份。
+- **改前先做通用性检查**：把准备写进技能的每条判据拿出来问三句——换个课时还成立吗？换个实验条件（仅多媒体／教师演示）还成立吗？是不是只能靠数字（几分钟、几行、几秒）才说得清？三句有一句不过，这条就降级为示例、或写成本节课的做法，不进通用规则；结论写进本次改动说明。
 
 - 权威源（唯一手改处）：/root/skill-repos/g9-physics，工作区外，写入需要一次放行。
 - 运行入口：~/.dsh/skills/generate-9th-grade-physics-lesson-plan，是指向权威源的软链，勿直接改。

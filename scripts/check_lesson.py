@@ -5,7 +5,7 @@
 用法：
   python3 scripts/check_lesson.py --docx 详案.docx --md 详案.md [--skill SKILL.md]
 
-失败项 7 项（影响退出码；每项在输出里带连续「第N项」，供自检回报引用）：
+失败项 9 项（影响退出码；每项在输出里带连续「第N项」，供自检回报引用）：
   1. board 块数 ≤2（## 板N 与 board 围栏数双测）；
   2. 每块实际书写行 ≤8（块＝「## 板N」；围栏内没有板N 时整个围栏算一块）；
   3. docx 有内嵌板书图；
@@ -13,7 +13,10 @@
   5. docx 末尾生成信息块存在，版本串＝SKILL.md frontmatter（读不到 SKILL 时跳过）；
   6. 〔板书｜…〕 段落为红色样式（该 md 没有 board 块时跳过）；
   7. 文件名符合现行命名规则。
-提示项 5 项（不影响退出码）：每行字数 ≤14、科学思维 ≥2 类、科学探究 ≥2 类、目标单句 ≤40 字、各环节用时求和＝40。
+  8. 各环节用时之和＝课时分钟（课时分钟从「课时：…N分钟」读；读不到则跳过）；
+  9. md 未晚于同名 docx（md 改了忘了重生成；-旧版 归档不查）。
+     --warn-only 时第 8、9 项降为提示，不影响退出码（复检历史旧稿用）。
+提示项 7 项（不影响退出码）：每行字数 ≤14、科学思维 ≥2 类、科学探究 ≥2 类、目标单句 ≤40 字、同一操作口径唯一（互斥说法同现）、两版该同部分一致（--pair）。
 视觉层：把内嵌板书图导出并打印路径，供模型 read_image 复核；--export-dir（或 JIAOAN_EXPORT_DIR）指定导出目录，缺省临时目录，指定目录不可写时自动退回临时目录。
 退出码：0=全绿；1=有失败项。
 """
@@ -35,9 +38,13 @@ TIME_RE = re.compile(r'^###\s*.*环节.*?约?\s*([0-9]+)\s*分钟', re.M)
 PUNCT = set('，。、；：！？（）【】「」《》〈〉“”‘’·—…→←↔=+*/|_[]{}<>~!@#$%^&*()"\',.:;?')
 
 RESULTS = []
+WARN_ONLY = [False]
 
 
-def item(name, ok, detail=''):
+def item(name, ok, detail='', soft=False):
+    if soft and not ok and WARN_ONLY[0]:
+        warn(name, detail + '（--warn-only）')
+        return
     RESULTS.append((name, ok, detail))
     print('  [%s] 第%d项 %s%s' % ('PASS' if ok else 'FAIL', len(RESULTS), name, ('  ' + detail) if detail else ''))
 
@@ -145,13 +152,34 @@ def boardmark_red(styles):
     return c.group(1).upper() in ('C00000', 'FF0000'), 'BoardMark 颜色 ' + c.group(1)
 
 
+def common_blocks(t):
+    boards = ['\n'.join(b).strip() for b in parse_boards(t)]
+    heads = [ln.strip() for ln in t.splitlines() if re.match(r'^###\s*.*环节', ln)]
+    return boards, heads
+
+
+def compare_common(a, b):
+    out = []
+    ba, ha = common_blocks(a)
+    bb, hb = common_blocks(b)
+    if ba != bb:
+        out.append('板书块不一致（%d／%d 块）' % (len(ba), len(bb)))
+    if ha != hb:
+        only = sorted(set(ha) ^ set(hb))
+        out.append('环节标题或用时不一致 %d 处：%s' % (len(only), '｜'.join(only[:2])))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description='教案成品·板书规格校验')
     ap.add_argument('--docx', required=True)
     ap.add_argument('--md', required=True)
     ap.add_argument('--skill', default='')
     ap.add_argument('--export-dir', default=os.environ.get('JIAOAN_EXPORT_DIR', ''))
+    ap.add_argument('--pair', default='', help='另一版详案 md：比对板书块与环节标题行')
+    ap.add_argument('--warn-only', action='store_true', help='第 8、9 项降为提示（复检历史旧稿用）')
     a = ap.parse_args()
+    WARN_ONLY[0] = a.warn_only
     md_path = a.md
     docx_path = a.docx
     if not os.path.isfile(md_path):
@@ -221,6 +249,24 @@ def main():
     item('文件名符合规则', name_ok(base_md) and name_ok(base_docx) and stem_ok,
          '%s / %s' % (base_md, base_docx))
 
+    print('== 7. 各环节用时求和 ==')
+    tm = re.search(r'课时[：:][^\n]*?(\d+)\s*分钟', md)
+    if not tm:
+        skip('各环节用时求和', '未读到课时分钟声明')
+    else:
+        lesson_min = int(tm.group(1))
+        mins = [int(x) for x in TIME_RE.findall(md)]
+        item('各环节用时求和', bool(mins) and sum(mins) == lesson_min,
+             '合计 %d 分钟／课时 %d 分钟' % (sum(mins), lesson_min), soft=True)
+
+    print('== 8. md 与 docx 时间戳 ==')
+    if '-旧版' in base_md or '-旧版' in base_docx:
+        skip('md 未晚于 docx', '旧版归档不查')
+    else:
+        md_newer = os.path.getmtime(md_path) > os.path.getmtime(docx_path)
+        item('md 未晚于 docx', not md_newer,
+             'md 已改、docx 未重生成，请重跑生成脚本' if md_newer else '', soft=True)
+
     print('== 提示项（不影响退出码）==')
     over = []
     for b in blocks:
@@ -240,8 +286,15 @@ def main():
         seg = md[i:j]
     long = [s for s in re.split(r'[；;。]', seg) if len(s.strip()) > 40]
     warn('目标单句 <=40 字', '超长 %d 句' % len(long) if long else '通过')
-    mins = [int(x) for x in TIME_RE.findall(md)]
-    warn('各环节用时求和', '合计 %d 分钟' % sum(mins) if mins else '未识别到环节标题行')
+    PAIRS = [('停两次', '停一次'), ('最右端', '最左端'), ('滑片向右移', '滑片向左移')]
+    clashes = ['%s／%s' % (x, y) for x, y in PAIRS if x in md and y in md]
+    warn('同一操作口径唯一', ('同现：' + '；'.join(clashes)) if clashes else '通过')
+    if a.pair:
+        if not os.path.isfile(a.pair):
+            warn('两版该同部分一致', '配对文件不存在：' + a.pair)
+        else:
+            diffs = compare_common(md, read(a.pair))
+            warn('两版该同部分一致', '一致' if not diffs else '；'.join(diffs))
 
     print('== 视觉层：导出内嵌板书图 ==')
     if media:
