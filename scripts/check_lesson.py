@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_lesson.py — 教案成品·板书规格外部校验（v8.18.0，纯标准库）。
+"""check_lesson.py — 教案成品·板书规格外部校验（v8.18.1，纯标准库）。
 
 用法：
   python3 scripts/check_lesson.py --docx 详案.docx --md 详案.md [--skill SKILL.md]

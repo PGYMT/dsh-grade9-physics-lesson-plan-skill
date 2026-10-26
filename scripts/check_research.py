@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_research.py — 备课调研完成度外部校验（v8.18.0，纯标准库）。
+"""check_research.py — 备课调研完成度外部校验（v8.18.1，纯标准库）。
 
 用法：
   python3 scripts/check_research.py --workspace DIR --chapter 章节 --section 节号节名 --summary 摘要.md

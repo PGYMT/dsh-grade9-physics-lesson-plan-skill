@@ -1,12 +1,12 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 8.18.0
+version: 8.18.1
 description: Use when asked to generate or revise a Grade 9 physics lesson plan (九年级物理教案) from a Seewo .enbx, per the saved 教案生成要求, or to add pages to an .enbx (改课件/加页). Defaults to 40 min/period; outputs only the 详案/逐字稿 (Markdown + Word) for new and practice lessons. Research-first via the 教学资源取件手册, runs check_research.py + check_lesson.py before delivery; can add native-text pages (click-to-reveal answers) to an .enbx copy, original untouched. Not for 'how do I use this skill'.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v8.18.0
+> 版本：v8.18.1
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 
 ## 1. 何时触发
@@ -22,11 +22,11 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 ## 2. 执行前必须确认（读下面的用户档案，只问与档案不同的项）
 
 用户档案（默认值）：
-- 教材：人教版（2024）九年级物理全一册；课时：每课时 40 分钟
+- 教材：人教版（2024）九年级物理全一册；课时：默认每课时 40 分钟，用户指定时长按用户
 - 实验条件：默认“仅多媒体”；不出“学生分组实验”版
 - 稿型：只出详案/逐字稿（1 份 md＋1 份 docx）
 - 板书：1—2 块小黑板（至少 1 块），每块 ≤8 行、每行 ≤14 字
-- 落位：docx 放章节根级、md 放 md文件/；文件名“<节号><节名>-<课时标识>-<实验条件版本>-详案”（多课时用“第N课时”、单课时用“1课时”；练习课/讲评课用“<节号><节名>-练习课-详案”）；**新建文件前**先用整理脚本声明目的地（organize.py plan --dest，见整理技能 SKILL「五个动作」），**更新已有文件就地写入、不必 plan**（plan 对已存在的同名文件会判「声明不合法」并回退收件箱）
+- 落位：docx 放章节根级、md 放 md文件/；文件名“<节号><节名>-<课时标识>-<实验条件版本>-详案”（多课时用“第N课时”、单课时用“1课时”；练习课/讲评课用“<节号><节名>-练习课-详案”）；**写文件前先问路**：新建用 organize.py plan --dest（见整理技能 SKILL「五个动作」），更新已有同名文件加 --update；不加 --update 会被判「目标已存在同名文件」并退回规则判断
 - 联网调研：默认允许且必做；检索到的可用内容落地存 08-网络资源/（能下载的原件优先，不能下载的存正文快照 .md）
 
 缺哪项问哪项，其余不重复问：

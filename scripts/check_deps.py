@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_deps.py — 教案技能依赖自检与自举（v1.0，2026-09-30）。
+"""check_deps.py — 教案技能依赖自检与自举（v1.1，2026-10-27）。
 
 用法：
-  python3 check_deps.py                  # 只检测：打印就绪/缺失与安装建议
-  python3 check_deps.py --install        # 缺的工作区脚本，从 skill/scripts/dist/ 补齐
-  python3 check_deps.py --sync-dist      # 反向：把工作区脚本同步到 skill/scripts/dist/
-  python3 check_deps.py --workspace DIR  # 指定工作区（默认 /root/dsh-workspace/工作文件）
+  python3 check_deps.py [--workspace DIR] [--install | --sync-dist]
+默认工作区：环境变量 JIAOAN_WORKSPACE，未设置时 ~/dsh-workspace/工作文件。
+环境变量：WSL_WINDOWS_ROOT（Windows 盘根，默认 /mnt/c，存在时）、DSH_HOME（默认 ~/.dsh）。
 退出码：0＝必需项全就绪；1＝有必需项缺失。无网络时只报缺，不尝试联网。
 """
 import argparse, glob, os, shutil, subprocess, sys
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_WS = '/root/dsh-workspace/工作文件'
+DEFAULT_WS = os.environ.get('JIAOAN_WORKSPACE') or os.path.expanduser('~/dsh-workspace/工作文件')
+WIN_ROOT = os.environ.get('WSL_WINDOWS_ROOT') or ('/mnt/c' if os.path.isdir('/mnt/c') else '')
+DSH_HOME = os.environ.get('DSH_HOME') or os.path.expanduser('~/.dsh')
 DIST = os.path.join(SKILL_DIR, 'scripts', 'dist')
 
 # 工作区脚本清单：相对路径 -> 用途
@@ -50,7 +51,32 @@ def pillow_state(ws):
     for p in pats:
         for f in glob.glob(p):
             return True, 'vendor wheel 可用：' + os.path.basename(f)
-    return False, 'pip download pillow --only-binary=:all: --python-version %d.%d' % sys.version_info[:2]
+    if shutil.which('uv'):
+        hint = 'uv pip install pillow'
+    else:
+        hint = 'python3 -m pip install pillow'
+    return False, hint + '；或把匹配 cp3NN 的 wheel 放进工作区 06-工具与提示词/教程/vendor/'
+
+def font_paths():
+    paths = []
+    if WIN_ROOT:
+        paths += [os.path.join(WIN_ROOT, 'Windows/Fonts/simkai.ttf'),
+                  os.path.join(WIN_ROOT, 'Windows/Fonts/simhei.ttf')]
+    paths += [os.path.expanduser('~/.fonts/NotoSansCJK-Regular.ttc'),
+              '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+              '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc']
+    return paths
+
+def powershell_path():
+    for name in ('powershell.exe', 'powershell'):
+        p = shutil.which(name)
+        if p:
+            return p
+    if WIN_ROOT:
+        p = os.path.join(WIN_ROOT, 'Windows/System32/WindowsPowerShell/v1.0/powershell.exe')
+        if os.path.exists(p):
+            return p
+    return ''
 
 def check(ws):
     missing = []
@@ -63,8 +89,7 @@ def check(ws):
     for c, why in [('ffmpeg', '视频抽帧'), ('ffprobe', '读取视频时长/分辨率'), ('tesseract', '截图 OCR')]:
         (ok if shutil.which(c) else bad)('%s（%s）' % (c, why))
     print('== 字体 ==')
-    fonts = ['/mnt/c/Windows/Fonts/simkai.ttf', '/mnt/c/Windows/Fonts/simhei.ttf',
-             '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc']
+    fonts = font_paths()
     (ok if any(os.path.exists(f) for f in fonts) else bad)('中文字体（simkai/simhei 或 Noto）')
     print('== 工作区脚本 ==')
     ws_missing = []
@@ -76,12 +101,12 @@ def check(ws):
             bad('%s（%s）' % (rel, why), 'python3 %s --install' % os.path.abspath(__file__))
             ws_missing.append(rel)
     print('== 仅 Windows（课件核对用） ==')
-    for c in ['/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe']:
-        (ok if os.path.exists(c) else bad)('PowerShell')
+    ps = powershell_path()
+    (ok if ps else bad)('PowerShell', ps)
     print('== 交叉依赖 ==')
-    for p in ['/root/.dsh/skills/auto-organize-work-files/scripts/organize.py',
-              '/root/.dsh/skills/auto-organize-work-files/scripts/skill_link.py',
-              '/root/.dsh/skills/auto-organize-work-files/scripts/sync_checklist.py',
+    for p in [os.path.join(DSH_HOME, 'skills/auto-organize-work-files/scripts/organize.py'),
+              os.path.join(DSH_HOME, 'skills/auto-organize-work-files/scripts/skill_link.py'),
+              os.path.join(DSH_HOME, 'skills/auto-organize-work-files/scripts/sync_checklist.py'),
               os.path.join(SKILL_DIR, 'SKILL.md')]:
         (ok if os.path.exists(p) else bad)(p)
     print('== 技能脚本（不进 WS_SCRIPTS/dist） ==')

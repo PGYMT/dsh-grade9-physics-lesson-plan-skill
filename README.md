@@ -1,6 +1,6 @@
 # dsh-grade9-physics-lesson-plan-skill
 
-> 版本：v8.18.0
+> 版本：v8.18.1
 
 九年级物理教案生成 Skill，基于希沃白板 `.enbx` 或类似课件生成/修改教案。本仓库是技能文件的**权威源**（`SKILL.md` + `references/01–07` + 本说明）；运行入口 `~/.dsh/skills/generate-9th-grade-physics-lesson-plan` 是指向本仓库本地克隆的软链。
 
@@ -11,7 +11,7 @@
 - 板书成品化：1—2 块（至少 1 块）、每块 ≤8 行、每行 ≤14 字；md 用 board 围栏，docx 插入渲染好的板书图。
 - 教学目标按核心素养四维度、学生视角、可测可评；重难点就地写；过渡语服务真实逻辑关系。
 - 可对 .enbx 副本加原生页（答案点击出现），原件逐字节不动；可修订已有教案。
-- 外部校验：scripts/check_research.py 判调研完成度、scripts/check_lesson.py 判教案成品（板书规格/内嵌图/版本块/用时，v9 生成 docx 时自动调用），scripts/check_structure.py 判结构一致与交叉引用，回归自检 scripts/tests/run_tests.py。
+- 外部校验：scripts/check_research.py 判调研完成度；scripts/check_lesson.py 判教案成品 9 失败项（板书规格、内嵌图、版本块、板书旁批、文件名、用时求和、md/docx 时间戳等，v9 生成 docx 时自动调用）；scripts/check_structure.py 判结构一致与交叉引用；回归自检 scripts/tests/run_tests.py。
 - 依赖自举：换机器先跑 scripts/check_deps.py。
 
 详细口径以 SKILL.md 与 references/01–07 为准：内容见 01，教学设计细则见 02，文献见 03，维护见 04，资源取件见 05，课件修改见 06，备课调研判定见 07。
@@ -55,6 +55,8 @@
 ## 版本记录
 
 完整变更记录见 references/04-技能维护规范.md §6。高层里程碑：
+
+- v8.18.1：第二批收尾——v9 改为显式参数并新增 --help/--dry-run，check_deps 支持 JIAOAN_WORKSPACE/WSL_WINDOWS_ROOT/DSH_HOME 与 PowerShell 自动查找，05 标题去重，03 练习课命名统一，02/01/SKILL 课时长度与 Markdown-only 例外写清，07 补板书关键维，04 补 lint/selftest 命令与 plan --update 口径，README/04 补 check_lesson 9 失败项。
 
 - v8.18.0：结构审计修复——check_lesson 要求板书 1—2 块并核对内嵌图与真实旁批，check_research 兼容日期/全角竖线/来源类型并在 08-网络资源/ 递归查来源，check_structure 新增正文交叉引用检查，check_deps 安装后复检，run_tests 扩为 35 条；文档同步离线素材包与格式口径。
 

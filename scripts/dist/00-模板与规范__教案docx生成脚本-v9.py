@@ -13,13 +13,18 @@ v9 职责：
 版本号读 SKILL.md frontmatter（JIAOAN_SKILL_DIR / 运行入口软链 / 权威源 依次尝试），读不到写「版本未知」。
 
 用法：
-  python3 教案docx生成脚本-v9.py                 # 默认第十五章 md文件/ 下全部 *详案.md
-  python3 教案docx生成脚本-v9.py --dir <md目录>    # 指定目录下全部 *详案.md
-  python3 教案docx生成脚本-v9.py <a.md> [b.md…]
-  python3 教案docx生成脚本-v9.py --verify
+  python3 教案docx生成脚本-v9.py --help
+  python3 教案docx生成脚本-v9.py <a.md> [b.md…]          # 只处理显式给出的 md
+  python3 教案docx生成脚本-v9.py --dir <md目录>           # 目录下全部 *详案.md
+  python3 教案docx生成脚本-v9.py --all                    # 显式处理默认第十五章（默认不再扫描整章）
+  python3 教案docx生成脚本-v9.py --dry-run <a.md…>        # 只列 md→docx，不写文件
+  python3 教案docx生成脚本-v9.py --verify --dir <md目录>  # 只校验已生成的 docx
+
+安全约定：
+  不带任何目标时只打印用法并退出 2；未知选项报错退出 2；--all 必须显式写。
 """
 from __future__ import annotations
-import os, re, sys, zipfile, shutil, importlib.util, tempfile, datetime, subprocess
+import os, re, sys, zipfile, shutil, importlib.util, tempfile, datetime, subprocess, argparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 V8 = os.path.join(HERE, '教案docx生成脚本-v8.py')
@@ -341,33 +346,72 @@ def scan_dir(d):
     return sorted(os.path.join(d, n) for n in os.listdir(d) if n.endswith('详案.md'))
 
 
-def _parse_argv(argv):
-    positional, d = [], None
-    i = 0
-    while i < len(argv):
-        a = argv[i]
-        if a == '--dir':
-            if i + 1 >= len(argv):
-                raise SystemExit('错误：--dir 缺少取值')
-            d = argv[i + 1]; i += 2; continue
-        if a.startswith('--'):
-            i += 1; continue
-        positional.append(a); i += 1
-    return positional, d
+def _build_parser():
+    p = argparse.ArgumentParser(
+        prog=os.path.basename(__file__),
+        description='把教案 Markdown 转成 docx，并嵌入板书图、写版本块、做结构自检。',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            '示例：\n'
+            '  python3 教案docx生成脚本-v9.py 某详案.md\n'
+            '  python3 教案docx生成脚本-v9.py --dir 某章/md文件\n'
+            '  python3 教案docx生成脚本-v9.py --all\n'
+            '  python3 教案docx生成脚本-v9.py --dry-run 某详案.md\n'
+            '  python3 教案docx生成脚本-v9.py --verify --dir 某章/md文件\n'
+        ))
+    p.add_argument('md', nargs='*', metavar='MD', help='要转换的 .md 文件；可给多个')
+    g = p.add_mutually_exclusive_group()
+    g.add_argument('--dir', metavar='DIR', help='转换目录下全部 *详案.md')
+    g.add_argument('--all', action='store_true', help='显式转换默认第十五章 md文件/ 下全部 *详案.md')
+    p.add_argument('--verify', action='store_true', help='只校验 docx，不写文件')
+    p.add_argument('--dry-run', action='store_true', help='只列出 md→docx，不写文件')
+    return p
+
+
+def _collect_mds(ns, v8):
+    if ns.all:
+        return v8.default_targets()
+    if ns.dir:
+        return scan_dir(ns.dir)
+    return list(ns.md)
+
+
+def _validate_mds(mds, parser):
+    if not mds:
+        parser.error('没有找到待转换的 md 文件')
+    for md in mds:
+        if not md.endswith('.md'):
+            parser.error('只接受 .md 文件：' + md)
+        if not os.path.isfile(md):
+            parser.error('文件不存在：' + md)
 
 
 def main():
+    parser = _build_parser()
+    ns = parser.parse_args()
+    if ns.md and ns.all:
+        parser.error('不能同时给 md 文件和 --all')
+    if ns.md and ns.dir:
+        parser.error('不能同时给 md 文件和 --dir')
+    if ns.verify and ns.dry_run:
+        parser.error('--verify 与 --dry-run 不能同时使用')
+    if not ns.md and not ns.dir and not ns.all:
+        parser.print_usage(sys.stderr)
+        print('错误：必须显式指定 md 文件、--dir 或 --all；v9 不再默认扫描整章。', file=sys.stderr)
+        return 2
     v8 = _load_v8()
     ver = skill_version()
-    argv = sys.argv[1:]
-    args, d = _parse_argv(argv)
-    if '--verify' in argv:
-        targets = args or [v8.out_for(p) for p in (scan_dir(d) if d else v8.default_targets())]
-        return v8.verify(targets)
-    mds = args or (scan_dir(d) if d else v8.default_targets())
-    if not mds:
-        print('没有找到待转换的 md 文件')
-        return 1
+    mds = _collect_mds(ns, v8)
+    _validate_mds(mds, parser)
+    if ns.all:
+        print('[范围] 默认章节目录，共 %d 份' % len(mds))
+    if ns.verify:
+        return v8.verify([v8.out_for(md) for md in mds])
+    if ns.dry_run:
+        print('[dry-run] 将处理 %d 份：' % len(mds))
+        for md in mds:
+            print('  %s -> %s' % (md, v8.out_for(md)))
+        return 0
     for md in mds:
         out = v8.out_for(md)
         stats = make_docx_v9(md, out, ver)
