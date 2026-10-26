@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """check_structure.py — 教案技能结构一致性校验（v1.0，2026-09-30）。
 
-校验六类：
+校验七类：
   1. 版本号一致：SKILL.md frontmatter、SKILL.md 正文首行、references/01–07 文件头、README.md、DEPENDENCIES.md。
   2. 脚本名单三处一致：check_deps.py 的 WS_SCRIPTS、references/04 的脚本表与校验清单、scripts/dist/ 文件。
   3. SKILL.md §5 索引表指向的文件都存在。
@@ -10,6 +10,7 @@
      教学资源取件手册.md＝05、网络资源参考价值评价维度.md＝07。
   5. scripts/dist/ 各副本与工作区脚本逐字节一致。
   6. 技能根两个新脚本（check_research.py、check_lesson.py）存在，且在 04 与 DEPENDENCIES 有登记。
+  7. 正文中的「文件 §节号」交叉引用目标存在；跳过 04 变更记录与 README 版本记录。
 
 用法：
   python3 scripts/check_structure.py [--workspace DIR]
@@ -78,6 +79,64 @@ def body(rel):
     return '\n'.join(out)
 
 
+CROSS_FILES = {
+    'SKILL': 'SKILL.md',
+    '01': 'references/01-教案生成要求.md',
+    '02': 'references/02-教学设计细则.md',
+    '03': 'references/03-教学研究参考.md',
+    '04': 'references/04-技能维护规范.md',
+    '05': 'references/05-教学资源网站.md',
+    '06': 'references/06-课件修改与排版.md',
+    '07': 'references/07-网络资源参考价值评价维度.md',
+    'README': 'README.md',
+    'DEPENDENCIES': 'DEPENDENCIES.md',
+}
+CROSS_STOPS = {
+    '04': r'^## 6\. 变更记录\s*$',
+    'README': r'^## 版本记录\s*$',
+}
+CROSS_RE = re.compile(r'(?<![A-Za-z0-9])(SKILL|0[1-7]|README|DEPENDENCIES)\s*§\s*([0-9]+(?:\.[0-9]+)*)')
+HEAD_RE = re.compile(r'^#{2,5}\s+(?:需求\s*)?([0-9]+(?:\.[0-9]+)*)(?=[\s.、:：]|$)')
+FENCE = chr(96) * 3
+
+
+def live_lines(text, stop_re=None):
+    stop = re.compile(stop_re) if stop_re else None
+    off = False
+    for no, line in enumerate(text.splitlines(), 1):
+        if stop and stop.match(line):
+            off = True
+        if not off:
+            yield no, line
+
+
+def section_numbers(rel, stop_re=None):
+    secs = set()
+    for _, line in live_lines(rd(os.path.join(SKILL_DIR, rel)), stop_re):
+        m = HEAD_RE.match(line)
+        if m:
+            secs.add(m.group(1))
+    return secs
+
+
+def cross_references():
+    secs = {k: section_numbers(rel, CROSS_STOPS.get(k)) for k, rel in CROSS_FILES.items()}
+    bad = []
+    for key, rel in CROSS_FILES.items():
+        fence = False
+        for no, line in live_lines(rd(os.path.join(SKILL_DIR, rel)), CROSS_STOPS.get(key)):
+            if line.lstrip().startswith(FENCE):
+                fence = not fence
+                continue
+            if fence:
+                continue
+            for m in CROSS_RE.finditer(line):
+                target, num = m.group(1), m.group(2)
+                if target not in secs or num not in secs[target]:
+                    bad.append('%s:%d %s §%s' % (rel, no, target, num))
+    return bad
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--workspace', default=DEFAULT_WS)
@@ -141,6 +200,10 @@ def main():
     for s in ['check_research.py', 'check_lesson.py']:
         check('scripts/%s 存在' % s, os.path.isfile(os.path.join(SKILL_DIR, 'scripts', s)))
         check('%s 已在 04/DEPENDENCIES 登记' % s, s in t04 and s in tdep)
+
+    print('== 7. 交叉引用目标存在 ==')
+    miss = cross_references()
+    check('正文「文件 §节号」引用均存在', not miss, '; '.join(miss))
 
     bad = [n for n, ok, _ in RESULTS if not ok]
     print('')

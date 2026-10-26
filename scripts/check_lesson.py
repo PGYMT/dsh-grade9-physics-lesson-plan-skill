@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_lesson.py — 教案成品·板书规格外部校验（v8.14.0，纯标准库）。
+"""check_lesson.py — 教案成品·板书规格外部校验（v8.18.0，纯标准库）。
 
 用法：
   python3 scripts/check_lesson.py --docx 详案.docx --md 详案.md [--skill SKILL.md]
 
-失败项 9 项（影响退出码；每项在输出里带连续「第N项」，供自检回报引用）：
-  1. board 块数 ≤2（## 板N 与 board 围栏数双测）；
+失败项（影响退出码；每项在输出里带连续「第N项」，供自检回报引用）：
+  1. board 块数 1—2（## 板N 与 board 围栏数双测）；
   2. 每块实际书写行 ≤8（块＝「## 板N」；围栏内没有板N 时整个围栏算一块）；
-  3. docx 有内嵌板书图；
+  3. docx 内嵌 board-*.png 数＝md board 块数，且至少 1 张；
   4. 本次未向 04-教案/<章节>/板书图/ 新增板书图；
   5. docx 末尾生成信息块存在，版本串＝SKILL.md frontmatter（读不到 SKILL 时跳过）；
-  6. 〔板书｜…〕 段落为红色样式（该 md 没有 board 块时跳过）；
+  6. 〔板书｜…〕 段落为红色样式，docx 用数不少于 md 真实旁批数；多出只提示；
   7. 文件名符合现行命名规则。
-  8. 各环节用时之和＝课时分钟（课时分钟从「课时：…N分钟」读；读不到则跳过）；
+  8. 各环节用时之和＝课时分钟（读「课时：…N分钟」；读不到按默认 40 分钟并提示）；
   9. md 未晚于同名 docx（md 改了忘了重生成；-旧版 归档不查）。
-     --warn-only 时第 8、9 项降为提示，不影响退出码（复检历史旧稿用）。
-提示项 7 项（不影响退出码）：每行字数 ≤14、科学思维 ≥2 类、科学探究 ≥2 类、目标单句 ≤40 字、同一操作口径唯一（互斥说法同现）、两版该同部分一致（--pair）。
+     --warn-only 时第 5、8、9 项降为提示，不影响退出码（复检历史旧稿用）。
+提示项（不影响退出码）：每行字数 ≤14、科学思维 ≥2 类、科学探究 ≥2 类、目标单句 ≤40 字、同一操作口径唯一（互斥说法同现）、两版该同部分一致（--pair）。
 视觉层：把内嵌板书图导出并打印路径，供模型 read_image 复核；--export-dir（或 JIAOAN_EXPORT_DIR）指定导出目录，缺省临时目录，指定目录不可写时自动退回临时目录。
 退出码：0=全绿；1=有失败项。
 """
@@ -39,14 +39,17 @@ PUNCT = set('，。、；：！？（）【】「」《》〈〉“”‘’·�
 
 RESULTS = []
 WARN_ONLY = [False]
+ITEM_NO = 0
 
 
 def item(name, ok, detail='', soft=False):
+    global ITEM_NO
+    ITEM_NO += 1
     if soft and not ok and WARN_ONLY[0]:
-        warn(name, detail + '（--warn-only）')
+        print('  [WARN] 第%d项 %s%s（--warn-only）' % (ITEM_NO, name, ('  ' + detail) if detail else ''))
         return
     RESULTS.append((name, ok, detail))
-    print('  [%s] 第%d项 %s%s' % ('PASS' if ok else 'FAIL', len(RESULTS), name, ('  ' + detail) if detail else ''))
+    print('  [%s] 第%d项 %s%s' % ('PASS' if ok else 'FAIL', ITEM_NO, name, ('  ' + detail) if detail else ''))
 
 
 def warn(name, detail=''):
@@ -54,7 +57,9 @@ def warn(name, detail=''):
 
 
 def skip(name, detail=''):
-    print('  [SKIP] %s%s' % (name, ('  ' + detail) if detail else ''))
+    global ITEM_NO
+    ITEM_NO += 1
+    print('  [SKIP] 第%d项 %s%s' % (ITEM_NO, name, ('  ' + detail) if detail else ''))
 
 
 def read(path):
@@ -100,6 +105,19 @@ def board_rows(block):
 
 def actual_chars(s):
     return sum(1 for ch in s if not ch.isspace() and ch not in PUNCT)
+
+
+def board_notes(md):
+    n = 0
+    for ln in md.splitlines():
+        s = ln.strip()
+        if not s or s.startswith('>'):
+            continue
+        for body in re.findall(r'〔板书｜([^〕]*)〕', s):
+            if re.match(r'^板[0-9N]+·x', body.strip()):
+                continue
+            n += 1
+    return n
 
 
 def find_chapter_dir(md_path):
@@ -177,7 +195,7 @@ def main():
     ap.add_argument('--skill', default='')
     ap.add_argument('--export-dir', default=os.environ.get('JIAOAN_EXPORT_DIR', ''))
     ap.add_argument('--pair', default='', help='另一版详案 md：比对板书块与环节标题行')
-    ap.add_argument('--warn-only', action='store_true', help='第 8、9 项降为提示（复检历史旧稿用）')
+    ap.add_argument('--warn-only', action='store_true', help='第 5、8、9 项降为提示（复检历史旧稿用）')
     a = ap.parse_args()
     WARN_ONLY[0] = a.warn_only
     md_path = a.md
@@ -192,18 +210,21 @@ def main():
     blocks = parse_boards(md)
     heads = sum(len(HEAD_RE.findall('\n'.join(b))) for b in blocks)
 
-    print('== 1. 块数 <=2 ==')
-    item('board 块数 <=2', len(blocks) <= 2 and heads <= 2,
+    print('== 块数 ==')
+    item('board 块数 1—2', 1 <= len(blocks) <= 2 and 1 <= heads <= 2,
          '围栏 %d，##板N %d' % (len(blocks), heads))
 
-    print('== 2. 每块行数 <=8 ==')
+    print('== 每块行数 ==')
     units = [u for b in blocks for u in board_units(b)]
     worst = max([len(u) for u in units], default=0)
     item('每块实际书写行 <=8', worst <= 8, '最多 %d 行／共 %d 块' % (worst, len(units)))
 
-    print('== 3. docx 内嵌板书图 + 未单独落盘 ==')
+    print('== 内嵌板书图 / 未单独落盘 ==')
     names, doc, styles, media = docx_parts(docx_path)
-    ok_a = len(media) > 0
+    board_media = [n for n in media
+                   if os.path.basename(n).lower().startswith('board-')
+                   and n.lower().endswith('.png')]
+    ok_a = len(board_media) == len(blocks) and len(board_media) >= 1
     chapter = find_chapter_dir(md_path)
     bad_b = []
     if chapter:
@@ -215,10 +236,12 @@ def main():
                     p = os.path.join(dp, f)
                     if os.path.getmtime(p) > ref:
                         bad_b.append(os.path.relpath(p, chapter))
-    item('docx 有内嵌板书图', ok_a, 'word/media 共 %d 个' % len(media))
+    item('docx 内嵌 board-*.png 数＝md board 块数', ok_a,
+         'board-*.png %d 张／md board %d 块（word/media 共 %d 个）'
+         % (len(board_media), len(blocks), len(media)))
     item('未单独落盘板书图', not bad_b, '／'.join(bad_b) if bad_b else '')
 
-    print('== 4. 生成信息块 + 版本 ==')
+    print('== 生成信息块 / 版本 ==')
     skill = resolve_skill(a.skill)
     if not skill:
         skip('生成信息块版本', '读不到 SKILL.md')
@@ -229,18 +252,21 @@ def main():
         ok4 = 'ProvenanceNote' in doc
         if ver and ver != '版本未知' and ver not in doc:
             ok4 = False
-        item('生成信息块版本', ok4, 'SKILL v%s' % (ver or '?'))
+        item('生成信息块版本', ok4, 'SKILL v%s' % (ver or '?'), soft=True)
 
-    print('== 5. 板书旁批红色 ==')
-    note_n = len(re.findall(r'〔板书｜', md))
+    print('== 板书旁批 ==')
+    note_n = board_notes(md)
     if not blocks:
         skip('板书旁批红色', '该 md 无 board 块')
     else:
         red, note = boardmark_red(styles)
         used = len(re.findall(r'w:pStyle w:val="BoardMark"', doc))
-        item('板书旁批红色', red and used >= 1, note + ('，docx 用 %d 次（md 旁批 %d 处）' % (used, note_n)))
+        if used > note_n:
+            warn('docx 板书旁批多于 md', 'docx %d 次／md 真实旁批 %d 处' % (used, note_n))
+        item('板书旁批红色且数量足够', red and used >= max(note_n, 1),
+             note + ('，docx 用 %d 次（md 真实旁批 %d 处）' % (used, note_n)))
 
-    print('== 6. 文件名 ==')
+    print('== 文件名 ==')
     base_md = os.path.basename(md_path)
     base_docx = os.path.basename(docx_path)
     def name_ok(n):
@@ -249,17 +275,18 @@ def main():
     item('文件名符合规则', name_ok(base_md) and name_ok(base_docx) and stem_ok,
          '%s / %s' % (base_md, base_docx))
 
-    print('== 7. 各环节用时求和 ==')
+    print('== 各环节用时 ==')
     tm = re.search(r'课时[：:][^\n]*?(\d+)\s*分钟', md)
-    if not tm:
-        skip('各环节用时求和', '未读到课时分钟声明')
-    else:
+    if tm:
         lesson_min = int(tm.group(1))
-        mins = [int(x) for x in TIME_RE.findall(md)]
-        item('各环节用时求和', bool(mins) and sum(mins) == lesson_min,
-             '合计 %d 分钟／课时 %d 分钟' % (sum(mins), lesson_min), soft=True)
+    else:
+        lesson_min = 40
+        warn('课时分钟声明', '未读到「课时：…N分钟」，按默认 40 分钟')
+    mins = [int(x) for x in TIME_RE.findall(md)]
+    item('各环节用时求和', bool(mins) and sum(mins) == lesson_min,
+         '合计 %d 分钟／课时 %d 分钟' % (sum(mins), lesson_min), soft=True)
 
-    print('== 8. md 与 docx 时间戳 ==')
+    print('== md/docx 时间戳 ==')
     if '-旧版' in base_md or '-旧版' in base_docx:
         skip('md 未晚于 docx', '旧版归档不查')
     else:

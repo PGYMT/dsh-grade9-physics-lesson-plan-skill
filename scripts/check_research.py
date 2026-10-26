@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_research.py — 备课调研完成度外部校验（v8.14.0，纯标准库）。
+"""check_research.py — 备课调研完成度外部校验（v8.18.0，纯标准库）。
 
 用法：
   python3 scripts/check_research.py --workspace DIR --chapter 章节 --section 节号节名 --summary 摘要.md
   python3 scripts/check_research.py --workspace DIR --chapter 章节 --section 节号节名 --lesson 详案.md
 
-失败项 8 项（影响退出码）：
+失败项（影响退出码）：
   1. 摘要文件存在，且七维度逐条出现；
   2. 七维度每条都带 http(s) 链接与抓取日期（标「在线来源，未落盘」也照样要链接与日期）；
   3. 摘要含「哈希清单」块；
-  4. 教案/课件/练习/导学案/板书参考五类去重后达标，且每类来源类型为「官方」或「精品」；
+  4. 五类去重后达标；份数统计的来源类型只能是「官方」或「精品」（逐份判定可写更宽）；
   5. 摘要「已落盘」数与 08-网络资源/ 实际文件对账（实际少于摘要才 FAIL）；
-  6. 传了 --lesson 时，教案「九、参考资料」的每个来源都能在「来源映射」里落到本地文件或标「在线来源，未落盘」；
+  6. 传了 --lesson 时，教案必须有「九、参考资料」，且每个来源都能在「来源映射」里落到本地文件或标「在线来源，未落盘」；映射里的本地文件必须存在；
   7. 摘要含「逐份判定」块，覆盖全部可用件（=正文达标文件），每行 >=9 字段，等级取 甲/乙/丙/—；
   8. 「可用」数不超正文达标数；有效数（判定行中等级为甲或乙的件数）低于该类下限时，必须已出《人工取件清单》。
 
@@ -36,6 +36,7 @@ RES_EXT = ('.md', '.docx', '.pdf', '.pptx', '.ppt', '.doc', '.txt')
 EXCLUDE = ('调研记录', '调研摘要', '人工取件清单', '检索记录', '抓取记录')
 URL_RE = re.compile(r'https?://[^\s)）>」]+')
 DATE_RE = re.compile(r'20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]')
+DATE_ANY_RE = re.compile(r'20[0-9]{2}-?[0-9]{2}-?[0-9]{2}')
 FLOOR = {'教案': 400, '课件': 400, '练习': 400, '导学案': 400, '板书参考': 100}
 BODY_MARKERS = ('教学目标', '学习目标', '教学过程', '教学重点', '教学难点', '重难点',
                 '板书', '导学', '预习', '答案', '解析', '例题', '练习', '探究',
@@ -47,11 +48,14 @@ JUDGE_BLOCK = '逐份判定'
 LEGACY_JUDGE_BLOCK = '网络教案价值打分'
 
 RESULTS = []
+ITEM_NO = 0
 
 
 def item(name, ok, detail=''):
+    global ITEM_NO
+    ITEM_NO += 1
     RESULTS.append((name, ok, detail))
-    print('  [%s] 第%d项 %s%s' % ('PASS' if ok else 'FAIL', len(RESULTS), name, ('  ' + detail) if detail else ''))
+    print('  [%s] 第%d项 %s%s' % ('PASS' if ok else 'FAIL', ITEM_NO, name, ('  ' + detail) if detail else ''))
 
 
 def warn(name, detail=''):
@@ -59,7 +63,9 @@ def warn(name, detail=''):
 
 
 def skip(name, detail=''):
-    print('  [SKIP] %s%s' % (name, ('  ' + detail) if detail else ''))
+    global ITEM_NO
+    ITEM_NO += 1
+    print('  [SKIP] 第%d项 %s%s' % (ITEM_NO, name, ('  ' + detail) if detail else ''))
 
 
 def read(path):
@@ -106,16 +112,31 @@ def to_int(s):
     return int(re.sub(r'[^0-9]', '', s) or '0')
 
 
+def norm_section(s):
+    return re.sub(r'[\s、，,。；;：:（）()【】]', '', s or '')
+
+
+def parse_date(s):
+    m = DATE_ANY_RE.search(s or '')
+    if not m:
+        return None
+    d = m.group(0).replace('-', '')
+    return '%s-%s-%s' % (d[:4], d[4:6], d[6:8])
+
+
 def auto_summary(ws, chapter, section):
     d = os.path.join(ws, '08-网络资源', '优秀教案', chapter, 'md文件')
     if not os.path.isdir(d):
         return None, []
-    pat = re.compile(re.escape(section) + r'-调研摘要-([0-9]{8})\.md$')
+    target = norm_section(section)
     hits = []
     for n in os.listdir(d):
-        m = pat.search(n)
-        if m:
-            hits.append((m.group(1), os.path.join(d, n)))
+        m = re.search(r'-调研摘要-([0-9]{8})\.md$', n)
+        if not m:
+            continue
+        if norm_section(n[:m.start()]) != target:
+            continue
+        hits.append((m.group(1), os.path.join(d, n)))
     hits.sort(reverse=True)
     return (hits[0][1] if hits else None), hits
 
@@ -208,6 +229,11 @@ def parse_judgements(lines):
         return rows, bad
     for ln in lines:
         s = ln.strip().lstrip('-').lstrip('*').strip()
+        s = s.replace('｜', '|').strip()
+        if s.startswith('|'):
+            s = s[1:]
+        if s.endswith('|'):
+            s = s[:-1]
         if '|' not in s:
             continue
         parts = [p.strip() for p in s.split('|')]
@@ -228,7 +254,7 @@ def find_manual_list(ws, section):
     root = os.path.join(ws, '08-网络资源')
     for p in walk_files(root):
         b = os.path.basename(p)
-        if MANUAL_LIST in b and b.startswith(section):
+        if MANUAL_LIST in b and norm_section(b).startswith(norm_section(section)):
             return p
     return ''
 
@@ -266,7 +292,7 @@ def main():
     text = read(summary)
     blocks = split_blocks(text)
 
-    print('== 1. 七维度逐条 ==')
+    print('== 七维度逐条 ==')
     dim_lines = find_block(blocks, '七维度')
     dims = {}
     if dim_lines:
@@ -279,22 +305,22 @@ def main():
     missing = [d for d in DIMENSIONS if d not in dims]
     item('七维度逐条出现', not missing, '缺：' + '／'.join(missing) if missing else '七条齐全')
 
-    print('== 2. 每条带链接与日期 ==')
+    print('== 每条带链接与日期 ==')
     bad2 = []
     for d in DIMENSIONS:
         s = dims.get(d, '')
         if not s:
             bad2.append(d + '(缺条目)')
-        elif not URL_RE.search(s) or not DATE_RE.search(s):
+        elif not URL_RE.search(s) or not parse_date(s):
             bad2.append(d + '(缺链接或日期)')
     item('七维度每条带链接与日期', not bad2, '／'.join(bad2))
 
-    print('== 3. 哈希清单 ==')
+    print('== 哈希清单 ==')
     hashes = find_block(blocks, '哈希清单')
     ok3 = hashes is not None and any(ln.strip().lstrip('-').strip() for ln in hashes)
     item('摘要含哈希清单', ok3, '块缺失' if hashes is None else '块为空' if not ok3 else '')
 
-    print('== 4. 份数达标 + 来源类型 ==')
+    print('== 份数达标 / 来源类型 ==')
     stat = find_block(blocks, '份数统计')
     rows = parse_counts(stat) if stat else {}
     bad4 = []
@@ -309,10 +335,10 @@ def main():
         if got < LOWER[t]:
             bad4.append('%s(%d<%d)' % (t, got, LOWER[t]))
         if parts[4] not in ('官方', '精品'):
-            bad4.append('%s(来源类型=%s)' % (t, parts[4]))
+            bad4.append('%s(份数统计来源类型=%s，只能官方/精品)' % (t, parts[4]))
     item('五类份数达标且含官方/精品', not bad4, '／'.join(bad4))
 
-    print('== 5. 与实际文件对账 ==')
+    print('== 与实际文件对账 ==')
     m = re.match(r'[0-9]+\.[0-9]+', a.section)
     sec_no = m.group(0) if m else ''
     actual = actual_counts(ws, a.chapter, sec_no)
@@ -326,30 +352,54 @@ def main():
             bad5.append('%s(摘要%d>实际%d)' % (t, claimed, actual.get(t, 0)))
     item('已落盘与 08-网络资源/ 对账', not bad5, '／'.join(bad5))
 
-    print('== 6. 教案来源可溯源 ==')
+    print('== 教案来源可溯源 ==')
     if not a.lesson or not os.path.isfile(a.lesson):
         skip('教案来源可溯源', '未传 --lesson' if not a.lesson else '教案不存在：' + a.lesson)
     else:
         mapping = parse_mapping(find_block(blocks, '来源映射') or [])
         lt = read(a.lesson)
         idx = lt.find('九、参考资料')
-        refs = lt[idx:] if idx >= 0 else ''
-        bad6 = []
-        for u in URL_RE.findall(refs):
-            if u in mapping:
-                continue
-            if any(k == u and '未落盘' in v for k, v in mapping.items()):
-                continue
-            bad6.append(u)
-        for lp in re.findall(r'08-网络资源/[^\n)）>」|]+?\.(?:md|docx|pdf|pptx|ppt|txt|doc)', refs):
-            if os.path.exists(os.path.join(ws, lp)):
-                continue
-            if os.path.basename(lp) in ' '.join(mapping.values()):
-                continue
-            bad6.append(lp)
-        item('教案来源可溯源', not bad6, '／'.join(sorted(set(bad6))))
+        if idx < 0:
+            item('教案来源可溯源', False, '未找到「九、参考资料」')
+        else:
+            refs = lt[idx:]
+            bad6 = []
+            for u in URL_RE.findall(refs):
+                if u in mapping:
+                    continue
+                if any(k == u and '未落盘' in v for k, v in mapping.items()):
+                    continue
+                bad6.append(u)
+            for lp in re.findall(r'08-网络资源/[^\n)）>」|]+?\.(?:md|docx|pdf|pptx|ppt|txt|doc)', refs):
+                if os.path.exists(os.path.join(ws, lp)):
+                    continue
+                if os.path.basename(lp) in ' '.join(mapping.values()):
+                    continue
+                bad6.append(lp)
+            res_files = []
+            for rt, ds, fs in os.walk(os.path.join(ws, '08-网络资源')):
+                for f in fs:
+                    res_files.append(os.path.join(rt, f))
+            for v in mapping.values():
+                if not v or v.strip() in ('—', '-', '无') or '未落盘' in v or URL_RE.search(v):
+                    continue
+                for part in re.split(r'[；;、]', v):
+                    part = part.strip()
+                    if not part:
+                        continue
+                    np = part.replace('\\', '/').strip()
+                    cands = [part,
+                             os.path.join(os.path.dirname(summary), part),
+                             os.path.join(ws, part),
+                             os.path.join(ws, '08-网络资源', part)]
+                    if any(os.path.exists(c) for c in cands):
+                        continue
+                    if any(p.replace('\\', '/').endswith('/' + np) for p in res_files):
+                        continue
+                    bad6.append('来源映射本地文件不存在：%s' % part)
+            item('教案来源可溯源', not bad6, '／'.join(sorted(set(bad6))))
 
-    print('== 7. 逐份判定块与有效数 ==')
+    print('== 逐份判定块与有效数 ==')
     good = good_files(ws, a.chapter, sec_no)
     manual = find_manual_list(ws, a.section)
     jrows, jbad = parse_judgements(find_block(blocks, JUDGE_BLOCK))
@@ -367,7 +417,7 @@ def main():
             bad7.append('%s缺判定行%d条' % (t, len(miss)))
     item('逐份判定块覆盖可用件且字段等级合法', not bad7, '／'.join(bad7))
 
-    print('== 8. 有效数与中断阈值 ==')
+    print('== 有效数与中断阈值 ==')
     effective = {}
     bad8 = []
     for t in COUNT_TYPES:
@@ -402,17 +452,16 @@ def main():
         warn('已找到《人工取件清单》', manual)
     gap = os.path.join(ws, '08-网络资源', '备课缺口表.md')
     if os.path.isfile(gap):
-        sd = ''
-        for d in DATE_RE.findall(os.path.basename(summary)):
-            sd = d
+        sd = parse_date(os.path.basename(summary)) or ''
         found = '—'
         for ln in read(gap).splitlines():
-            if a.section in ln:
+            if norm_section(a.section) in norm_section(ln):
                 cells = [c.strip() for c in ln.strip().strip('|').split('|')]
                 if cells:
                     found = cells[-1]
                 break
-        if sd and found != '—' and found >= sd:
+        found_d = parse_date(found) or ''
+        if sd and found_d and found_d >= sd:
             warn('缺口表已更新', found)
         else:
             warn('缺口表已更新', '本节最近更新=%s，摘要日期=%s' % (found, sd or '未知'))

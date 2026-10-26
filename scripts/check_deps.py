@@ -38,14 +38,14 @@ def cmd_ok(cmd):
     except Exception:
         return False
 
-def pillow_state():
+def pillow_state(ws):
     try:
         from PIL import Image  # noqa: F401
         return True, '系统 Pillow 可用'
     except Exception:
         pass
     tag = 'cp%d%d' % sys.version_info[:2]
-    pats = [os.path.join(DEFAULT_WS, '06-工具与提示词/教程/vendor', 'pillow-*-%s-*.whl' % tag),
+    pats = [os.path.join(ws, '06-工具与提示词/教程/vendor', 'pillow-*-%s-*.whl' % tag),
             os.path.join(SKILL_DIR, 'scripts', 'vendor', 'pillow-*-%s-*.whl' % tag)]
     for p in pats:
         for f in glob.glob(p):
@@ -56,7 +56,7 @@ def check(ws):
     missing = []
     print('== Python 与库 ==')
     print('  Python %s' % sys.version.split()[0])
-    pil, note = pillow_state()
+    pil, note = pillow_state(ws)
     (ok if pil else bad)('Pillow（板书渲染）', note)
     if not pil: missing.append('Pillow')
     print('== 外部命令（可选） ==')
@@ -126,6 +126,9 @@ def main():
     miss = check(a.workspace)
     if a.install:
         install(a.workspace)
+        print('')
+        print('== 安装后复检 ==')
+        miss = check(a.workspace)
     print('')
     print('结果：必需项缺失 %d 项' % len(miss))
     return 1 if miss else 0

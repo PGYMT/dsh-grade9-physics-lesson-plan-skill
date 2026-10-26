@@ -49,14 +49,26 @@ NAMES = {
 SRC = {'教案': '官方', '课件': '精品', '练习': '官方', '导学案': '官方', '板书参考': '精品'}
 
 
-def expect(tag, want, cmd):
+def expect(tag, want, cmd, must_fail=None, must_warn=None):
     p = subprocess.run(cmd, capture_output=True, text=True)
     got = 0 if p.returncode == 0 else 1
-    mark = 'OK ' if got == want else 'BAD'
-    if got != want:
+    ok = got == want
+    extra = ''
+    if ok and must_fail is not None:
+        needle = '[FAIL] 第%d项' % must_fail
+        if needle not in p.stdout:
+            ok = False
+            extra = '（未看到 %s）' % needle
+    if ok and must_warn is not None:
+        needle = '[WARN] 第%d项' % must_warn
+        if needle not in p.stdout:
+            ok = False
+            extra = '（未看到 %s）' % needle
+    mark = 'OK ' if ok else 'BAD'
+    if not ok:
         FAILS.append(tag)
-    print('[%s] %s  期望退出=%d 实际=%d' % (mark, tag, want, got))
-    if got != want:
+    print('[%s] %s  期望退出=%d 实际=%d%s' % (mark, tag, want, got, extra))
+    if not ok:
         print('--- stdout ---')
         print(p.stdout)
         print('--- stderr ---')
@@ -106,29 +118,33 @@ def dims(bad=None, nolink=None):
     return NL.join(lines)
 
 
-def judge_rows(mode=None):
+def judge_rows(mode=None, fullwidth=False):
     """mode: None=全部乙；none 由调用方略去块；miss=少一条教案行；bing=导学案全部丙。"""
     rows = []
+    sep = '｜' if fullwidth else '|'
     for t, ns in NAMES.items():
         for n in ns:
             if mode == 'miss' and t == '教案' and n == NAMES['教案'][0]:
                 continue
             g = '丙' if (mode == 'bing' and t == '导学案') else '乙'
             score = '12/18' if t == '教案' else ('11/16' if t == '课件' else ('9/14' if t in ('练习', '导学案') else '8/12'))
-            rows.append('- %s | %s | %s | 人教版 | 过 | %s | %s | 借鉴点：%s——采用 | 不参考原因：无' % (n, t, SRC[t], score, g, t))
+            rows.append('- ' + sep.join([n, t, SRC[t], '人教版', '过', score, g,
+                                        '借鉴点：%s——采用' % t, '不参考原因：无']))
     return rows
 
 
-def summary(drop_hash=False, low_jiao=False, bad=None, nolink=None, judge=None):
+def summary(drop_hash=False, low_jiao=False, bad=None, nolink=None, judge=None,
+            fullwidth=False, mapping=None):
     s = ['# 16.9 测试节-调研摘要-20261011', '', '## 七维度', dims(bad, nolink), '', '## 份数统计',
          '教案=%s/3/3/3/官方/达标' % ('1' if low_jiao else '3'),
          '课件=3/3/3/3/精品/达标', '练习=3/3/3/3/官方/达标', '导学案=2/2/2/2/官方/达标',
          '板书参考=2/2/2/2/精品/达标', '视频=0/可选/0/0/不适用/不作硬要求', '']
     if judge != 'none':
-        s += ['## 逐份判定'] + judge_rows(judge) + ['']
+        s += ['## 逐份判定'] + judge_rows(judge, fullwidth) + ['']
     if not drop_hash:
-        s += ['## 哈希清单', 'abc123def456abcd 16.9测试节-教案-1.md', '']
-    s += ['## 来源映射', 'https://example.com/0 -> 16.9测试节-教案-1.md', '',
+        s += ['## 哈希清单', 'abc123def456abcd %s' % NAMES['教案'][0], '']
+    target = NAMES['教案'][0] if mapping is None else mapping
+    s += ['## 来源映射', 'https://example.com/0 -> %s' % target, '',
           '## 失败站点', '- example.org | /x | 403 | 1 | 2026-10-11 | https://example.com/0', '']
     return NL.join(s)
 
@@ -142,6 +158,37 @@ def research_tests(root):
     base = [sys.executable, CHECK_RESEARCH, '--workspace', ws, '--chapter', ch, '--section', sec]
     open(good, 'w', encoding='utf-8').write(summary())
     expect('正样本（应 PASS）', 0, base + ['--summary', good])
+
+    full = os.path.join(sd, '16.9测试节-调研摘要-20261011-full.md')
+    open(full, 'w', encoding='utf-8').write(summary(fullwidth=True))
+    expect('正样本：逐份判定用全角竖线', 0, base + ['--summary', full])
+
+    compact = os.path.join(sd, '16.9测试节-调研摘要-20261011-compact.md')
+    open(compact, 'w', encoding='utf-8').write(
+        summary().replace('抓取日期 2026-10-11', '抓取日期 20261011'))
+    expect('正样本：七维度日期用 YYYYMMDD', 0, base + ['--summary', compact])
+
+    commercial = os.path.join(sd, '16.9测试节-调研摘要-20261011-commercial.md')
+    open(commercial, 'w', encoding='utf-8').write(
+        summary().replace('课件=3/3/3/3/精品/达标', '课件=3/3/3/3/商业/达标'))
+    expect('负样本：份数统计来源类型非官方/精品', 1, base + ['--summary', commercial], must_fail=5)
+
+    lesson_ref = os.path.join(sd, '16.9测试节-1课时-仅多媒体-详案.md')
+    open(lesson_ref, 'w', encoding='utf-8').write('九、参考资料' + NL + 'https://example.com/0' + NL)
+    missmap = os.path.join(sd, '16.9测试节-调研摘要-20261011-missmap.md')
+    open(missmap, 'w', encoding='utf-8').write(summary(mapping='不存在-教案.md'))
+    expect('负样本：来源映射本地文件不存在', 1,
+           base + ['--summary', missmap, '--lesson', lesson_ref], must_fail=7)
+
+    crossmap = os.path.join(sd, '16.9测试节-调研摘要-20261011-crossmap.md')
+    open(crossmap, 'w', encoding='utf-8').write(summary(mapping=NAMES['课件'][0]))
+    expect('正样本：来源映射裸文件名在 08-网络资源 子目录', 0,
+           base + ['--summary', crossmap, '--lesson', lesson_ref])
+
+    noref = os.path.join(sd, '16.9测试节-1课时-仅多媒体-详案-无参考.md')
+    open(noref, 'w', encoding='utf-8').write('参考资料' + NL + 'https://example.com/0' + NL)
+    expect('负样本：教案无「九、参考资料」', 1, base + ['--summary', good, '--lesson', noref], must_fail=7)
+
     for tag, text in [
         ('缺七维度', summary(bad='过渡语')),
         ('来源无链接', summary(nolink='讲授思路')),
@@ -240,13 +287,27 @@ def lesson_tests(root, ws):
         print(p.stdout[-500:], p.stderr[-500:])
         return
 
-    def run(tag, want, m, d):
+    def run(tag, want, m, d, must_fail=None):
         if os.path.isfile(m) and os.path.isfile(d):
             t0 = os.path.getmtime(d) - 60
             os.utime(m, (t0, t0))
-        expect(tag, want, [sys.executable, CHECK_LESSON, '--md', m, '--docx', d, '--skill', SKILL_MD])
+        expect(tag, want, [sys.executable, CHECK_LESSON, '--md', m, '--docx', d, '--skill', SKILL_MD],
+               must_fail=must_fail)
 
     run('正样本（应 PASS）', 0, md, docx)
+
+    m0 = os.path.join(mdd, name + '.md')
+    open(m0, 'w', encoding='utf-8').write(base_md(boards=0))
+    run('负样本：无 board 围栏', 1, m0, docx, must_fail=1)
+
+    m0h = os.path.join(mdd, name + '.md')
+    open(m0h, 'w', encoding='utf-8').write(base_md().replace('## 板1（主板）', '## 板书（主板）'))
+    run('负样本：围栏内无 ##板N', 1, m0h, docx, must_fail=1)
+
+    m8b = os.path.join(mdd, name + '.md')
+    open(m8b, 'w', encoding='utf-8').write(
+        base_md().replace('（约5分钟）', '（约15分钟）', 1))
+    run('负样本：无课时声明且合计50分钟', 1, m8b, docx, must_fail=8)
 
     m1 = os.path.join(mdd, name + '.md')
     open(m1, 'w', encoding='utf-8').write(base_md(boards=3))
@@ -266,9 +327,11 @@ def lesson_tests(root, ws):
 
     m3 = os.path.join(mdd, name + '.md')
     open(m3, 'w', encoding='utf-8').write(base_md())
-    d3 = os.path.join(ch_dir, name + '-n3.docx')
+    variants = os.path.join(mdd, '变体docx')
+    os.makedirs(variants, exist_ok=True)
+    d3 = os.path.join(variants, name + '.docx')
     rewrite_docx(docx, d3, drop_media=True)
-    run('负样本：缺内嵌板书图', 1, m3, d3)
+    run('负样本：缺内嵌板书图', 1, m3, d3, must_fail=3)
 
     bd = os.path.join(ch_dir, '板书图')
     os.makedirs(bd, exist_ok=True)
@@ -279,13 +342,26 @@ def lesson_tests(root, ws):
     run('负样本：板书图单独落盘', 1, m3, docx)
     os.remove(png)
 
-    d5 = os.path.join(ch_dir, name + '-n5.docx')
+    d5 = os.path.join(variants, name + '.docx')
     rewrite_docx(docx, d5, doc_repl=lambda s: s.replace('ProvenanceNote', 'XrovenanceNote'))
-    run('负样本：版本块缺失', 1, m3, d5)
+    run('负样本：版本块缺失', 1, m3, d5, must_fail=5)
 
-    d6 = os.path.join(ch_dir, name + '-n6.docx')
+    warn_ch = os.path.join(root, '04-教案', '测试章-警告')
+    warn_mdd = os.path.join(warn_ch, 'md文件')
+    os.makedirs(warn_mdd, exist_ok=True)
+    warn_md = os.path.join(warn_mdd, name + '.md')
+    warn_docx = os.path.join(warn_ch, name + '.docx')
+    open(warn_md, 'w', encoding='utf-8').write(base_md())
+    rewrite_docx(docx, warn_docx, doc_repl=lambda s: s.replace('ProvenanceNote', 'XrovenanceNote'))
+    t0 = os.path.getmtime(warn_docx) - 60
+    os.utime(warn_md, (t0, t0))
+    expect('正样本：--warn-only 把版本块降为提示', 0,
+           [sys.executable, CHECK_LESSON, '--md', warn_md, '--docx', warn_docx,
+            '--skill', SKILL_MD, '--warn-only'], must_warn=5)
+
+    d6 = os.path.join(variants, name + '.docx')
     rewrite_docx(docx, d6, styles_repl=lambda s: s.replace('w:val="C00000"', 'w:val="595959"'))
-    run('负样本：板书旁批不红', 1, m3, d6)
+    run('负样本：板书旁批不红', 1, m3, d6, must_fail=6)
 
     bad = os.path.join(mdd, '随便一个名字.md')
     open(bad, 'w', encoding='utf-8').write(base_md())

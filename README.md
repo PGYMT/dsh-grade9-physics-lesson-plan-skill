@@ -1,17 +1,17 @@
 # dsh-grade9-physics-lesson-plan-skill
 
-> 版本：v8.17.0
+> 版本：v8.18.0
 
 九年级物理教案生成 Skill，基于希沃白板 `.enbx` 或类似课件生成/修改教案。本仓库是技能文件的**权威源**（`SKILL.md` + `references/01–07` + 本说明）；运行入口 `~/.dsh/skills/generate-9th-grade-physics-lesson-plan` 是指向本仓库本地克隆的软链。
 
 ## 功能特点
 
 - 只出详案/逐字稿（1 份 Markdown 工作稿＋1 份 Word 上课稿），默认每课时 40 分钟。
-- 备课调研必做：先查本地存档与《备课缺口表》，先走《教学资源取件手册》§0 省事通道（登录免费下载），再按九章顺序自己抓，按《网络资源参考价值评价维度》逐份过门槛＋打分（甲/乙/丙），有效数不足才出《人工取件清单》；摘要先给用户确认，可用内容落地 08-网络资源/；跑 scripts/check_research.py 才进写稿。
-- 板书成品化：最多 2 块、每块 ≤8 行、每行 ≤14 字；md 用 board 围栏，docx 插入渲染好的板书图。
+- 备课调研必做：先查本地存档（含 08-网络资源/离线素材包-人教版九年级物理/，按课时索引能覆盖就不再联网）与《备课缺口表》，先走《教学资源取件手册》§0 省事通道（登录免费下载），再按九章顺序自己抓，按《网络资源参考价值评价维度》逐份过门槛＋打分（甲/乙/丙），有效数不足才出《人工取件清单》；摘要先给用户确认，可用内容落地 08-网络资源/；跑 scripts/check_research.py 才进写稿。
+- 板书成品化：1—2 块（至少 1 块）、每块 ≤8 行、每行 ≤14 字；md 用 board 围栏，docx 插入渲染好的板书图。
 - 教学目标按核心素养四维度、学生视角、可测可评；重难点就地写；过渡语服务真实逻辑关系。
 - 可对 .enbx 副本加原生页（答案点击出现），原件逐字节不动；可修订已有教案。
-- 外部校验：scripts/check_research.py 判调研完成度、scripts/check_lesson.py 判板书规格（v9 生成 docx 时自动调用），负样本自检 scripts/tests/run_tests.py。
+- 外部校验：scripts/check_research.py 判调研完成度、scripts/check_lesson.py 判教案成品（板书规格/内嵌图/版本块/用时，v9 生成 docx 时自动调用），scripts/check_structure.py 判结构一致与交叉引用，回归自检 scripts/tests/run_tests.py。
 - 依赖自举：换机器先跑 scripts/check_deps.py。
 
 详细口径以 SKILL.md 与 references/01–07 为准：内容见 01，教学设计细则见 02，文献见 03，维护见 04，资源取件见 05，课件修改见 06，备课调研判定见 07。
@@ -45,6 +45,8 @@
 - 只改本仓库；改前备份到 `references/历史版本/`，改后跑：
   - `python3 /root/.dsh/skills/auto-organize-work-files/scripts/skill_link.py verify`
   - `python3 /root/.dsh/skills/auto-organize-work-files/scripts/sync_checklist.py --apply`
+  - `python3 scripts/check_structure.py`
+  - `python3 scripts/tests/run_tests.py`
   - 重新生成工作区生成物：`python3 "/root/dsh-workspace/工作文件/06-工具与提示词/教程/build_lesson_prompt.py"`
   - 课件修改脚本在 `06-工具与提示词/教程/`（build_enbx_native_pages.py、enbx_verify2.ps1、enbx_shot_ocr.py、expected_pages.json、extract_video_frames.py）
   - 依赖自检与分发同步：`python3 scripts/check_deps.py --sync-dist`
@@ -53,6 +55,10 @@
 ## 版本记录
 
 完整变更记录见 references/04-技能维护规范.md §6。高层里程碑：
+
+- v8.18.0：结构审计修复——check_lesson 要求板书 1—2 块并核对内嵌图与真实旁批，check_research 兼容日期/全角竖线/来源类型并在 08-网络资源/ 递归查来源，check_structure 新增正文交叉引用检查，check_deps 安装后复检，run_tests 扩为 35 条；文档同步离线素材包与格式口径。
+
+- v8.17.0：17.1 六轮改稿复盘——引用与结论三问、学生预设两条、提问三检、术语时机、同课时多版本、修订三查留档、改前通用性检查，并给 check_lesson 加用时求和与 md/docx 时间戳校验。
 
 - v8.16.0：取件手册新增 §0 省事通道（教师之家／希沃课件库／湖南智慧教育平台等登录免费下载），剔除死站与纯付费墙站，学科网补 0 储值免费池。
 

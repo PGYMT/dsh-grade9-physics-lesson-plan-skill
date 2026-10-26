@@ -1,6 +1,6 @@
 # 依赖清单与自举（DEPENDENCIES.md）
 
-> 版本：v8.17.0｜适用技能：generate-9th-grade-physics-lesson-plan
+> 版本：v8.18.0｜适用技能：generate-9th-grade-physics-lesson-plan
 > 用途：换机器、换 DSH、或第一次运行本技能前，先读本文件并跑一次自检。
 > 自检/自举脚本：`scripts/check_deps.py`（检测；`--install` 补工作区脚本；`--sync-dist` 反向同步）。
 
@@ -8,7 +8,7 @@
 
 ```sh
 python3 scripts/check_deps.py              # 看缺什么（退出码 0=必需项齐，1=有缺）
-python3 scripts/check_deps.py --install    # 用 scripts/dist/ 里的副本补齐工作区脚本
+python3 scripts/check_deps.py --install    # 用 scripts/dist/ 里的副本补齐工作区脚本，装完自动复检
 python3 scripts/check_deps.py --sync-dist  # 改完工作区脚本后，同步回 scripts/dist/
 ```
 
@@ -22,7 +22,7 @@ python3 scripts/check_deps.py --sync-dist  # 改完工作区脚本后，同步�
 | 工作区脚本 | 实际干活 | 见 `check_deps.py` 的 WS_SCRIPTS 清单 | `check_deps.py --install` 从 `scripts/dist/` 补齐；缺失则对应功能不可用 |
 | SKILL.md | 版本标注（读 frontmatter） | 运行入口软链或权威源 | 读不到时 docx 写「版本未知」，不阻断生成 |
 | check_research.py | 备课调研完成度校验（纯标准库） | `scripts/check_research.py` | 缺失则技能侧调研校验不可用；不进 WS_SCRIPTS、不进 dist |
-| check_lesson.py | 教案成品·板书规格校验（纯标准库） | `scripts/check_lesson.py` | 缺失则 v9 只提示不中断生成；同样不进 WS_SCRIPTS/dist |
+| check_lesson.py | 教案成品校验：板书规格、内嵌图、版本块、文件名、用时（纯标准库） | `scripts/check_lesson.py` | 缺失则 v9 只提示不中断生成；同样不进 WS_SCRIPTS/dist |
 
 ## 2. 可选项
 
