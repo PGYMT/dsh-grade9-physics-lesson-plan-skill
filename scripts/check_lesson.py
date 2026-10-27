@@ -18,11 +18,13 @@
      --warn-only 时第 5、8、9 项降为提示，不影响退出码（复检历史旧稿用）。
 提示项（不影响退出码）：每行字数 ≤14、科学思维 ≥2 类、科学探究 ≥2 类、目标单句 ≤40 字、同一操作口径唯一（互斥说法同现）、两版该同部分一致（--pair）。
 视觉层：把内嵌板书图导出并打印路径，供模型 read_image 复核；--export-dir（或 JIAOAN_EXPORT_DIR）指定导出目录，缺省临时目录，指定目录不可写时自动退回临时目录。
+契约层：--contract 课程契约.json 时，末尾再跑 check_consistency.py 的 5 项（L2 一致层），结果并入本脚本退出码；不传时输出与旧版逐字节一致。
 退出码：0=全绿；1=有失败项。
 """
 import argparse
 import os
 import re
+import subprocess
 import sys
 import tempfile
 import zipfile
@@ -188,14 +190,47 @@ def compare_common(a, b):
     return out
 
 
+EPILOG = """字段词表（--contract 指向的课程契约 json；完整规则见 schemas/lesson.schema.json）
+  id / section / title / chapter / textbook   身份；version_tag 决定成品文件名后缀
+  duration_min                               课时分钟数，20—60
+  objectives[].dimension / text              四维目标：物理观念／科学思维／科学探究／科学态度与责任
+  segments[].name / minutes / kind           课堂环节；各 minutes 之和＝duration_min
+  boards.count / max_lines / max_chars       板书块数（≤2）、每块行数（≤8）、每行字数（≤14）
+  student_sheets[] / deck_pages[]            材料：导学案文件名、课件页码
+  sources[].url / fetched_date / type / level / sha256_16
+                                             来源；甲、乙级来源必须写进 md「九、参考资料」
+
+最小示例（存成 15.2电流和电路-第1课时-仅多媒体-详案.lesson.json 即可跑）
+  {"id":"15.2-第1课时","section":"15.2","title":"电流和电路","chapter":"第十五章 电流和电路",
+   "textbook":"人教版（2024）九年级物理全一册","duration_min":40,"experiment_mode":"仅多媒体",
+   "version_tag":"第1课时-仅多媒体-详案","draft":false,
+   "objectives":[{"dimension":"物理观念","text":"知道电流由电荷的定向移动形成"}],
+   "segments":[{"name":"情境导入","minutes":5,"kind":"导入"},
+               {"name":"新授","minutes":20,"kind":"新授"},
+               {"name":"当堂练习","minutes":10,"kind":"练习"},
+               {"name":"小结","minutes":5,"kind":"小结"}],
+   "boards":{"count":1,"max_lines":8,"max_chars":14},
+   "student_sheets":[],"deck_pages":[],
+   "sources":[{"url":"https://example.com/a","fetched_date":"2026-10-27","type":"教案",
+               "level":"甲","sha256_16":"0123456789abcdef"}]}
+  上面只放 1 条来源，正式契约要 ≥3 条且教案／课件／练习各 1；先跑 check_contract.py 看全部 10 项。
+"""
+
+
 def main():
-    ap = argparse.ArgumentParser(description='教案成品·板书规格校验')
-    ap.add_argument('--docx', required=True)
-    ap.add_argument('--md', required=True)
-    ap.add_argument('--skill', default='')
-    ap.add_argument('--export-dir', default=os.environ.get('JIAOAN_EXPORT_DIR', ''))
+    ap = argparse.ArgumentParser(
+        description='教案成品·板书规格校验（L3 内容层）',
+        epilog=EPILOG,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('--docx', required=True, help='教案成品 docx 路径')
+    ap.add_argument('--md', required=True, help='对应详案 md 路径（与 docx 同名同内容）')
+    ap.add_argument('--skill', default='', help='SKILL.md 路径（取版本串）；缺省自动找技能根')
+    ap.add_argument('--export-dir', default=os.environ.get('JIAOAN_EXPORT_DIR', ''),
+                    help='导出内嵌板书图的目录；缺省临时目录')
     ap.add_argument('--pair', default='', help='另一版详案 md：比对板书块与环节标题行')
     ap.add_argument('--warn-only', action='store_true', help='第 5、8、9 项降为提示（复检历史旧稿用）')
+    ap.add_argument('--contract', default='',
+                    help='可选的课程契约 json；传了就在末尾加跑 5 项一致校验（L2）')
     a = ap.parse_args()
     WARN_ONLY[0] = a.warn_only
     md_path = a.md
@@ -343,6 +378,23 @@ def main():
             print('  已导出 %d 张到 %s（指定目录不可写：%s）' % (len(media), d2, ex))
     else:
         print('  无内嵌图可导出')
+
+    if a.contract:
+        print('== 契约交叉校验（L2 · --contract）==')
+        cc = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'check_consistency.py')
+        if not os.path.isfile(a.contract):
+            item('契约文件存在', False, '读不到 ' + a.contract)
+        elif not os.path.isfile(cc):
+            skip('契约与 md 一致（L2）', '找不到相邻的 check_consistency.py')
+        else:
+            p = subprocess.run([sys.executable, cc, '--contract', a.contract, '--md', md_path],
+                               capture_output=True, text=True)
+            for ln in (p.stdout or '').splitlines():
+                print('  ' + ln)
+            if p.returncode != 0 and (p.stderr or '').strip():
+                print('  ' + p.stderr.strip().splitlines()[-1])
+            item('契约与 md 一致（L2）', p.returncode == 0,
+                 '契约 %s' % os.path.basename(a.contract))
 
     bad = [n for n, ok, _ in RESULTS if not ok]
     print('')

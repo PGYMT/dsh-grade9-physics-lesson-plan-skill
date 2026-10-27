@@ -1,0 +1,354 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""check_lesson.py — 教案成品·板书规格外部校验（v8.18.1，纯标准库）。
+
+用法：
+  python3 scripts/check_lesson.py --docx 详案.docx --md 详案.md [--skill SKILL.md]
+
+失败项（影响退出码；每项在输出里带连续「第N项」，供自检回报引用）：
+  1. board 块数 1—2（## 板N 与 board 围栏数双测）；
+  2. 每块实际书写行 ≤8（块＝「## 板N」；围栏内没有板N 时整个围栏算一块）；
+  3. docx 内嵌 board-*.png 数＝md board 块数，且至少 1 张；
+  4. 本次未向 04-教案/<章节>/板书图/ 新增板书图；
+  5. docx 末尾生成信息块存在，版本串＝SKILL.md frontmatter（读不到 SKILL 时跳过）；
+  6. 〔板书｜…〕 段落为红色样式，docx 用数不少于 md 真实旁批数；多出只提示；
+  7. 文件名符合现行命名规则。
+  8. 各环节用时之和＝课时分钟（读「课时：…N分钟」；读不到按默认 40 分钟并提示）；
+  9. md 未晚于同名 docx（md 改了忘了重生成；-旧版 归档不查）。
+     --warn-only 时第 5、8、9 项降为提示，不影响退出码（复检历史旧稿用）。
+提示项（不影响退出码）：每行字数 ≤14、科学思维 ≥2 类、科学探究 ≥2 类、目标单句 ≤40 字、同一操作口径唯一（互斥说法同现）、两版该同部分一致（--pair）。
+视觉层：把内嵌板书图导出并打印路径，供模型 read_image 复核；--export-dir（或 JIAOAN_EXPORT_DIR）指定导出目录，缺省临时目录，指定目录不可写时自动退回临时目录。
+退出码：0=全绿；1=有失败项。
+"""
+import argparse
+import os
+import re
+import sys
+import tempfile
+import zipfile
+
+BT = chr(96)
+FENCE = BT * 3
+BOARD_RE = re.compile(r'^[ ]*' + re.escape(FENCE) + r'board[ ]*$')
+HEAD_RE = re.compile(r'^##\s*板([0-9]+)', re.M)
+WEN_RE = re.compile(r'[0-9]+\.[0-9]+.+-((第[0-9]+课时)|(1课时))-[^\-]+-详案(-旧版)?\.(md|docx)$')
+PRAC_RE = re.compile(r'[0-9]+\.[0-9]+.+-练习课-详案(-旧版)?\.(md|docx)$')
+VER_RE = re.compile(r'^version:\s*([0-9][^\s]*)\s*$', re.M)
+TIME_RE = re.compile(r'^###\s*.*环节.*?约?\s*([0-9]+)\s*分钟', re.M)
+PUNCT = set('，。、；：！？（）【】「」《》〈〉“”‘’·—…→←↔=+*/|_[]{}<>~!@#$%^&*()"\',.:;?')
+
+RESULTS = []
+WARN_ONLY = [False]
+ITEM_NO = 0
+
+
+def item(name, ok, detail='', soft=False):
+    global ITEM_NO
+    ITEM_NO += 1
+    if soft and not ok and WARN_ONLY[0]:
+        print('  [WARN] 第%d项 %s%s（--warn-only）' % (ITEM_NO, name, ('  ' + detail) if detail else ''))
+        return
+    RESULTS.append((name, ok, detail))
+    print('  [%s] 第%d项 %s%s' % ('PASS' if ok else 'FAIL', ITEM_NO, name, ('  ' + detail) if detail else ''))
+
+
+def warn(name, detail=''):
+    print('  [WARN] %s%s' % (name, ('  ' + detail) if detail else ''))
+
+
+def skip(name, detail=''):
+    global ITEM_NO
+    ITEM_NO += 1
+    print('  [SKIP] 第%d项 %s%s' % (ITEM_NO, name, ('  ' + detail) if detail else ''))
+
+
+def read(path):
+    with open(path, encoding='utf-8') as f:
+        return f.read()
+
+
+def parse_boards(md):
+    blocks = []
+    cur = None
+    for ln in md.splitlines():
+        if BOARD_RE.match(ln):
+            cur = []
+            blocks.append(cur)
+        elif cur is not None and ln.strip().startswith(FENCE):
+            cur = None
+        elif cur is not None:
+            cur.append(ln)
+    return blocks
+
+
+def board_units(block):
+    units = []
+    cur = None
+    for ln in block:
+        s = ln.strip()
+        if HEAD_RE.match(s):
+            cur = []
+            units.append(cur)
+            continue
+        if not s or s.startswith('#'):
+            continue
+        if cur is None:
+            cur = []
+            units.append(cur)
+        cur.append(s)
+    return [u for u in units if u]
+
+
+def board_rows(block):
+    return [r for u in board_units(block) for r in u]
+
+
+def actual_chars(s):
+    return sum(1 for ch in s if not ch.isspace() and ch not in PUNCT)
+
+
+def board_notes(md):
+    n = 0
+    for ln in md.splitlines():
+        s = ln.strip()
+        if not s or s.startswith('>'):
+            continue
+        for body in re.findall(r'〔板书｜([^〕]*)〕', s):
+            if re.match(r'^板[0-9N]+·x', body.strip()):
+                continue
+            n += 1
+    return n
+
+
+def find_chapter_dir(md_path):
+    parts = os.path.abspath(md_path).split(os.sep)
+    for i, seg in enumerate(parts):
+        if seg == '04-教案' and i + 1 < len(parts):
+            return os.sep.join(parts[:i + 2])
+    return None
+
+
+def resolve_skill(arg):
+    cands = []
+    if arg:
+        cands.append(arg)
+    env = os.environ.get('JIAOAN_SKILL_DIR')
+    if env:
+        cands.append(env)
+    cands.append(os.path.expanduser('~/.dsh/skills/generate-9th-grade-physics-lesson-plan'))
+    cands.append('/root/skill-repos/g9-physics')
+    for d in cands:
+        p = d if os.path.basename(d) == 'SKILL.md' else os.path.join(d, 'SKILL.md')
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+def docx_parts(path):
+    with zipfile.ZipFile(path) as z:
+        names = z.namelist()
+        doc = read_zip(z, 'word/document.xml')
+        styles = read_zip(z, 'word/styles.xml')
+        media = [n for n in names if n.startswith('word/media/')]
+        return names, doc, styles, media
+
+
+def read_zip(z, name):
+    try:
+        return z.read(name).decode('utf-8', 'replace')
+    except KeyError:
+        return ''
+
+
+def boardmark_red(styles):
+    m = re.search(r'w:styleId="BoardMark"(.{0,4000}?)</w:style>', styles, re.S)
+    if not m:
+        return False, '无 BoardMark 样式'
+    c = re.search(r'w:color w:val="([0-9A-Fa-f]{6})"', m.group(1))
+    if not c:
+        return False, 'BoardMark 无颜色'
+    return c.group(1).upper() in ('C00000', 'FF0000'), 'BoardMark 颜色 ' + c.group(1)
+
+
+def common_blocks(t):
+    boards = ['\n'.join(b).strip() for b in parse_boards(t)]
+    heads = [ln.strip() for ln in t.splitlines() if re.match(r'^###\s*.*环节', ln)]
+    return boards, heads
+
+
+def compare_common(a, b):
+    out = []
+    ba, ha = common_blocks(a)
+    bb, hb = common_blocks(b)
+    if ba != bb:
+        out.append('板书块不一致（%d／%d 块）' % (len(ba), len(bb)))
+    if ha != hb:
+        only = sorted(set(ha) ^ set(hb))
+        out.append('环节标题或用时不一致 %d 处：%s' % (len(only), '｜'.join(only[:2])))
+    return out
+
+
+def main():
+    ap = argparse.ArgumentParser(description='教案成品·板书规格校验')
+    ap.add_argument('--docx', required=True)
+    ap.add_argument('--md', required=True)
+    ap.add_argument('--skill', default='')
+    ap.add_argument('--export-dir', default=os.environ.get('JIAOAN_EXPORT_DIR', ''))
+    ap.add_argument('--pair', default='', help='另一版详案 md：比对板书块与环节标题行')
+    ap.add_argument('--warn-only', action='store_true', help='第 5、8、9 项降为提示（复检历史旧稿用）')
+    a = ap.parse_args()
+    WARN_ONLY[0] = a.warn_only
+    md_path = a.md
+    docx_path = a.docx
+    if not os.path.isfile(md_path):
+        print('  [FAIL] md 不存在  ' + md_path)
+        return 1
+    if not os.path.isfile(docx_path):
+        print('  [FAIL] docx 不存在  ' + docx_path)
+        return 1
+    md = read(md_path)
+    blocks = parse_boards(md)
+    heads = sum(len(HEAD_RE.findall('\n'.join(b))) for b in blocks)
+
+    print('== 块数 ==')
+    item('board 块数 1—2', 1 <= len(blocks) <= 2 and 1 <= heads <= 2,
+         '围栏 %d，##板N %d' % (len(blocks), heads))
+
+    print('== 每块行数 ==')
+    units = [u for b in blocks for u in board_units(b)]
+    worst = max([len(u) for u in units], default=0)
+    item('每块实际书写行 <=8', worst <= 8, '最多 %d 行／共 %d 块' % (worst, len(units)))
+
+    print('== 内嵌板书图 / 未单独落盘 ==')
+    names, doc, styles, media = docx_parts(docx_path)
+    board_media = [n for n in media
+                   if os.path.basename(n).lower().startswith('board-')
+                   and n.lower().endswith('.png')]
+    ok_a = len(board_media) == len(blocks) and len(board_media) >= 1
+    chapter = find_chapter_dir(md_path)
+    bad_b = []
+    if chapter:
+        bd = os.path.join(chapter, '板书图')
+        if os.path.isdir(bd):
+            ref = os.path.getmtime(md_path)
+            for dp, dn, fn in os.walk(bd):
+                for f in fn:
+                    p = os.path.join(dp, f)
+                    if os.path.getmtime(p) > ref:
+                        bad_b.append(os.path.relpath(p, chapter))
+    item('docx 内嵌 board-*.png 数＝md board 块数', ok_a,
+         'board-*.png %d 张／md board %d 块（word/media 共 %d 个）'
+         % (len(board_media), len(blocks), len(media)))
+    item('未单独落盘板书图', not bad_b, '／'.join(bad_b) if bad_b else '')
+
+    print('== 生成信息块 / 版本 ==')
+    skill = resolve_skill(a.skill)
+    if not skill:
+        skip('生成信息块版本', '读不到 SKILL.md')
+    else:
+        ver = ''
+        m = VER_RE.search(read(skill))
+        ver = m.group(1) if m else ''
+        ok4 = 'ProvenanceNote' in doc
+        if ver and ver != '版本未知' and ver not in doc:
+            ok4 = False
+        item('生成信息块版本', ok4, 'SKILL v%s' % (ver or '?'), soft=True)
+
+    print('== 板书旁批 ==')
+    note_n = board_notes(md)
+    if not blocks:
+        skip('板书旁批红色', '该 md 无 board 块')
+    else:
+        red, note = boardmark_red(styles)
+        used = len(re.findall(r'w:pStyle w:val="BoardMark"', doc))
+        if used > note_n:
+            warn('docx 板书旁批多于 md', 'docx %d 次／md 真实旁批 %d 处' % (used, note_n))
+        item('板书旁批红色且数量足够', red and used >= max(note_n, 1),
+             note + ('，docx 用 %d 次（md 真实旁批 %d 处）' % (used, note_n)))
+
+    print('== 文件名 ==')
+    base_md = os.path.basename(md_path)
+    base_docx = os.path.basename(docx_path)
+    def name_ok(n):
+        return bool(WEN_RE.match(n) or PRAC_RE.match(n))
+    stem_ok = os.path.splitext(base_md)[0] == os.path.splitext(base_docx)[0]
+    item('文件名符合规则', name_ok(base_md) and name_ok(base_docx) and stem_ok,
+         '%s / %s' % (base_md, base_docx))
+
+    print('== 各环节用时 ==')
+    tm = re.search(r'课时[：:][^\n]*?(\d+)\s*分钟', md)
+    if tm:
+        lesson_min = int(tm.group(1))
+    else:
+        lesson_min = 40
+        warn('课时分钟声明', '未读到「课时：…N分钟」，按默认 40 分钟')
+    mins = [int(x) for x in TIME_RE.findall(md)]
+    item('各环节用时求和', bool(mins) and sum(mins) == lesson_min,
+         '合计 %d 分钟／课时 %d 分钟' % (sum(mins), lesson_min), soft=True)
+
+    print('== md/docx 时间戳 ==')
+    if '-旧版' in base_md or '-旧版' in base_docx:
+        skip('md 未晚于 docx', '旧版归档不查')
+    else:
+        md_newer = os.path.getmtime(md_path) > os.path.getmtime(docx_path)
+        item('md 未晚于 docx', not md_newer,
+             'md 已改、docx 未重生成，请重跑生成脚本' if md_newer else '', soft=True)
+
+    print('== 提示项（不影响退出码）==')
+    over = []
+    for b in blocks:
+        for r in board_rows(b):
+            if actual_chars(r) > 14:
+                over.append(r)
+    warn('每行字数 <=14', '超标 %d 行' % len(over) if over else '通过')
+    think = [k for k in ['模型建构', '科学推理', '科学论证', '质疑创新'] if k in md]
+    acts = [k for k in ['抽象', '比较', '归纳', '推理', '类比', '质疑', '修正'] if k in md]
+    warn('科学思维 >=2 类', '要素 %d 个／动作 %d 个' % (len(think), len(acts)))
+    inq = [k for k in ['提出问题', '获取证据', '作出解释', '交流评估'] if k in md]
+    warn('科学探究 >=2 类', '命中 %d 个：%s' % (len(inq), '／'.join(inq)))
+    seg = md
+    i = md.find('三、教学目标')
+    j = md.find('四、教学重难点')
+    if i >= 0 and j > i:
+        seg = md[i:j]
+    long = [s for s in re.split(r'[；;。]', seg) if len(s.strip()) > 40]
+    warn('目标单句 <=40 字', '超长 %d 句' % len(long) if long else '通过')
+    PAIRS = [('停两次', '停一次'), ('最右端', '最左端'), ('滑片向右移', '滑片向左移')]
+    clashes = ['%s／%s' % (x, y) for x, y in PAIRS if x in md and y in md]
+    warn('同一操作口径唯一', ('同现：' + '；'.join(clashes)) if clashes else '通过')
+    if a.pair:
+        if not os.path.isfile(a.pair):
+            warn('两版该同部分一致', '配对文件不存在：' + a.pair)
+        else:
+            diffs = compare_common(md, read(a.pair))
+            warn('两版该同部分一致', '一致' if not diffs else '；'.join(diffs))
+
+    print('== 视觉层：导出内嵌板书图 ==')
+    if media:
+        d = a.export_dir or tempfile.mkdtemp(prefix='lesson_board_')
+        try:
+            os.makedirs(d, exist_ok=True)
+            with zipfile.ZipFile(docx_path) as z:
+                for n in media:
+                    out = os.path.join(d, os.path.basename(n))
+                    with open(out, 'wb') as fh:
+                        fh.write(z.read(n))
+            print('  已导出 %d 张到 %s' % (len(media), d))
+        except OSError as ex:
+            d2 = tempfile.mkdtemp(prefix='lesson_board_')
+            with zipfile.ZipFile(docx_path) as z:
+                for n in media:
+                    with open(os.path.join(d2, os.path.basename(n)), 'wb') as fh:
+                        fh.write(z.read(n))
+            print('  已导出 %d 张到 %s（指定目录不可写：%s）' % (len(media), d2, ex))
+    else:
+        print('  无内嵌图可导出')
+
+    bad = [n for n, ok, _ in RESULTS if not ok]
+    print('')
+    print('结果：%d 项，失败 %d 项' % (len(RESULTS), len(bad)))
+    return 1 if bad else 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

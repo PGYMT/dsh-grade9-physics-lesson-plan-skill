@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_structure.py — 教案技能结构一致性校验（v1.1，2026-10-27）。
+"""check_structure.py — 教案技能结构一致性校验（v1.2，2026-10-27）。
 
 校验八类：
-  1. 版本号一致：SKILL.md frontmatter、SKILL.md 正文首行、references/01–07 文件头、README.md、DEPENDENCIES.md。
+  1. 版本号一致：SKILL.md frontmatter、SKILL.md 正文首行、references/ 下自动发现的 00–09 各文件头、README.md、DEPENDENCIES.md。
   2. 脚本名单三处一致：check_deps.py 的 WS_SCRIPTS＋SKILL_SCRIPTS、references/04 的脚本表与校验清单、scripts/dist/ 文件。
   3. SKILL.md §5 索引表指向的文件都存在。
   4. 正文与工作区生成物一致：教案生成要求提示词.md 含 01/02/06 正文；教学研究参考.md＝03；
@@ -25,9 +25,21 @@ import sys
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_WS = '/root/dsh-workspace/工作文件'
-REFS = ['01-教案生成要求.md', '02-教学设计细则.md', '03-教学研究参考.md',
-        '04-技能维护规范.md', '05-教学资源网站.md', '06-课件修改与排版.md',
-        '07-网络资源参考价值评价维度.md']
+# references/ 下按「两位数字-名字.md」自动发现，新增 00、08、09 时无需改脚本。
+# 排除 *.local.md（本地私人清单，不入库）与历史版本/（旧档）。
+REF_NAME_RE = re.compile(r'^[0-9]{2}-[^/]+\.md$')
+
+
+def discover_refs():
+    d = os.path.join(SKILL_DIR, 'references')
+    if not os.path.isdir(d):
+        return []
+    return [n for n in sorted(os.listdir(d))
+            if REF_NAME_RE.match(n) and not n.endswith('.local.md')
+            and os.path.isfile(os.path.join(d, n))]
+
+
+REFS = discover_refs()
 
 RESULTS = []
 
@@ -87,23 +99,23 @@ def body(rel):
     return '\n'.join(out)
 
 
-CROSS_FILES = {
-    'SKILL': 'SKILL.md',
-    '01': 'references/01-教案生成要求.md',
-    '02': 'references/02-教学设计细则.md',
-    '03': 'references/03-教学研究参考.md',
-    '04': 'references/04-技能维护规范.md',
-    '05': 'references/05-教学资源网站.md',
-    '06': 'references/06-课件修改与排版.md',
-    '07': 'references/07-网络资源参考价值评价维度.md',
-    'README': 'README.md',
-    'DEPENDENCIES': 'DEPENDENCIES.md',
-}
+def cross_files():
+    """SKILL + references/ 自动发现的各文件 + README/DEPENDENCIES；键为 00–09 等短名。"""
+    d = {'SKILL': 'SKILL.md'}
+    for n in REFS:
+        d[n[:2]] = 'references/' + n
+    d['README'] = 'README.md'
+    d['DEPENDENCIES'] = 'DEPENDENCIES.md'
+    return d
+
+
+CROSS_FILES = cross_files()
 CROSS_STOPS = {
     '04': r'^## 6\. 变更记录\s*$',
     'README': r'^## 版本记录\s*$',
 }
-CROSS_RE = re.compile(r'(?<![A-Za-z0-9])(SKILL|0[1-7]|README|DEPENDENCIES)\s*§\s*([0-9]+(?:\.[0-9]+)*)')
+CROSS_RE = re.compile(
+    r'(?<![A-Za-z0-9])(SKILL|0[0-9]|README|DEPENDENCIES)\s*§\s*([0-9]+(?:\.[0-9]+)*)')
 HEAD_RE = re.compile(r'^#{2,5}\s+(?:需求\s*)?([0-9]+(?:\.[0-9]+)*)(?=[\s.、:：]|$)')
 FENCE = chr(96) * 3
 
@@ -215,7 +227,7 @@ def main():
     idx_p = os.path.join(ws, '08-网络资源/教学资源取件手册.md')
     if os.path.isfile(prompt_p):
         pt = rd(prompt_p)
-        check('提示词含 01/02/06 正文',
+        check('提示词含 00/01/02/06 正文',
               all(body('references/' + r) in pt for r in ['01-教案生成要求.md', '02-教学设计细则.md', '06-课件修改与排版.md']))
     else:
         check('提示词生成物存在', False, prompt_p)

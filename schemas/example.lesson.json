@@ -1,0 +1,31 @@
+{
+  "id": "16.9-1课时",
+  "chapter": "第十六章 电压 电阻",
+  "section": "16.9",
+  "title": "测试节",
+  "textbook": "人教版（2024）九年级物理全一册",
+  "duration_min": 40,
+  "experiment_mode": "仅多媒体",
+  "version_tag": "1课时-仅多媒体-详案",
+  "draft": true,
+  "objectives": [
+    {"dimension": "物理观念", "text": "知道电流的方向由正电荷定向移动的方向规定"},
+    {"dimension": "科学思维", "text": "用闭合回路模型解释小灯泡发光需要什么条件"},
+    {"dimension": "科学探究", "text": "根据验电器箔片的变化作出导体导电的解释"},
+    {"dimension": "科学态度与责任", "text": "知道不把导线直接接在电池两端的原因"}
+  ],
+  "segments": [
+    {"name": "情境导入", "minutes": 5, "kind": "导入"},
+    {"name": "电流的形成", "minutes": 20, "kind": "新授"},
+    {"name": "当堂练习", "minutes": 10, "kind": "练习"},
+    {"name": "课堂小结", "minutes": 5, "kind": "小结"}
+  ],
+  "boards": {"count": 1, "max_lines": 8, "max_chars": 14},
+  "student_sheets": [],
+  "deck_pages": ["第1—17页"],
+  "sources": [
+    {"url": "https://example.com/lesson", "fetched_date": "2026-10-20", "type": "教案", "level": "甲", "sha256_16": "0123456789abcdef"},
+    {"url": "https://example.com/ppt", "fetched_date": "2026-10-20", "type": "课件", "level": "乙", "sha256_16": "fedcba9876543210"},
+    {"url": "https://example.com/exercise", "fetched_date": "2026-10-21", "type": "练习", "level": "丙", "sha256_16": "0011223344556677"}
+  ]
+}

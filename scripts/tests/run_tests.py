@@ -7,11 +7,14 @@
 
 check_research 用 8 份故意违规摘要（覆盖失败项 1-5、7、8）＋2 份合格摘要
 （常规；某类全丙但已出《人工取件清单》）；
-check_lesson 用 9 份故意违规 md/docx（覆盖失败项 1-9）＋2 份合格样本。
+check_lesson 用 9 份故意违规 md/docx（覆盖失败项 1-9）＋2 份合格样本；
+check_contract 用 1 份合格契约＋2 份违规契约（删环节、课时超范围）；
+check_consistency 用 1 份合格契约＋md 配对＋2 份违规配对（用时差 1 分钟、漏甲级来源）。
 docx 样本用技能内 scripts/build_docx.py 现场生成再拆改，不手搓 OOXML。
 退出码：0=全部符合预期；1=有样本未被判失败或正样本被误判。
 """
 import argparse
+import json
 import os
 import re
 import shutil
@@ -379,6 +382,112 @@ def lesson_tests(root, ws):
            [sys.executable, CHECK_LESSON, '--md', m9, '--docx', docx, '--skill', SKILL_MD])
 
 
+CHECK_CONTRACT = os.path.join(SKILL_DIR, 'scripts', 'check_contract.py')
+CHECK_CONSISTENCY = os.path.join(SKILL_DIR, 'scripts', 'check_consistency.py')
+
+
+def make_pair(d):
+    # 一份最小合法契约：4 环节 5+15+15+5=40 分钟，板书 1 块，来源甲乙丙各 1 条；配套 md 与之一致。
+    c = {
+        'id': '16.9-1课时', 'chapter': '第十六章 电压 电阻', 'section': '16.9', 'title': '测试节',
+        'textbook': '人教版', 'duration_min': 40, 'experiment_mode': '仅多媒体',
+        'version_tag': '1课时-详案', 'draft': False,
+        'objectives': [
+            {'dimension': '物理观念', 'text': '认识电压的作用与单位。'},
+            {'dimension': '科学思维', 'text': '能用类比说明电压与水压的异同。'},
+            {'dimension': '科学探究', 'text': '能按量程选择规则正确读数。'},
+            {'dimension': '科学态度与责任', 'text': '养成先看量程再读数的习惯。'},
+        ],
+        'segments': [
+            {'name': '情境导入', 'minutes': 5, 'kind': '导入'},
+            {'name': '认识电压', 'minutes': 15, 'kind': '新授'},
+            {'name': '当堂练习', 'minutes': 15, 'kind': '练习'},
+            {'name': '课堂小结', 'minutes': 5, 'kind': '小结'},
+        ],
+        'boards': {'count': 1, 'max_lines': 8, 'max_chars': 14},
+        'student_sheets': [], 'deck_pages': ['第1—9页'],
+        'sources': [
+            {'url': 'https://a.example/1', 'fetched_date': '2026-10-01', 'type': '教案',
+             'level': '甲', 'sha256_16': '0123456789abcdef'},
+            {'url': 'https://b.example/2', 'fetched_date': '2026-10-01', 'type': '课件',
+             'level': '乙', 'sha256_16': 'fedcba9876543210'},
+            {'url': 'https://c.example/3', 'fetched_date': '2026-10-01', 'type': '练习',
+             'level': '丙', 'sha256_16': '0000000000000000'},
+        ],
+    }
+    cp = os.path.join(d, '16.9测试节-1课时-详案.lesson.json')
+    open(cp, 'w', encoding='utf-8').write(json.dumps(c, ensure_ascii=False, indent=2) + NL)
+    md = NL.join([
+        '# 16.9 测试节 第1课时 详案',
+        '',
+        '## 六、教学过程',
+        '### 环节一 情境导入（约5分钟）',
+        '教师：请看课件第3页。',
+        '### 环节二 认识电压（约15分钟）',
+        '教师：电压使电路中形成电流。',
+        '### 环节三 当堂练习（约15分钟）',
+        '学生：完成练习 1—3 题。',
+        '### 环节四 课堂小结（约5分钟）',
+        '教师：回顾本节要点。',
+        '',
+        '## 板书设计',
+        BT * 3 + 'board',
+        '## 板1（主板）',
+        '一、电压：使电路形成电流的原因',
+        BT * 3,
+        '',
+        '## 九、参考资料',
+        '1. https://a.example/1',
+        '2. https://b.example/2',
+        '',
+    ])
+    mp = os.path.join(d, '16.9测试节-1课时-详案.md')
+    open(mp, 'w', encoding='utf-8').write(md)
+    return cp, mp, c, md
+
+
+def contract_tests(root):
+    print('===== check_contract.py =====')
+    d = os.path.join(root, 'contract')
+    os.makedirs(d, exist_ok=True)
+    cp, mp, c, md = make_pair(d)
+    expect('正样本：契约 10 项全过', 0,
+           [sys.executable, CHECK_CONTRACT, cp, '--strict', '--md', mp])
+    c2 = dict(c)
+    c2['segments'] = c['segments'][:3]
+    p2 = os.path.join(d, 'drop-segment.json')
+    open(p2, 'w', encoding='utf-8').write(json.dumps(c2, ensure_ascii=False))
+    expect('负样本：删掉一个环节（用时求和＝课时 不成立）', 1,
+           [sys.executable, CHECK_CONTRACT, p2], must_fail=4)
+    c3 = dict(c)
+    c3['duration_min'] = 10
+    p3 = os.path.join(d, 'duration-10.json')
+    open(p3, 'w', encoding='utf-8').write(json.dumps(c3, ensure_ascii=False))
+    expect('负样本：课时改成 10 分钟（超出 20—60）', 1,
+           [sys.executable, CHECK_CONTRACT, p3], must_fail=3)
+
+
+def consistency_tests(root):
+    print('===== check_consistency.py =====')
+    d = os.path.join(root, 'consistency')
+    os.makedirs(d, exist_ok=True)
+    cp, mp, c, md = make_pair(d)
+    expect('正样本：契约与 md 5 项全过', 0,
+           [sys.executable, CHECK_CONSISTENCY, '--contract', cp, '--md', mp])
+    base = os.path.basename(mp)
+    q2d = os.path.join(d, 'neg-minutes')
+    os.makedirs(q2d, exist_ok=True)
+    q2 = os.path.join(q2d, base)
+    open(q2, 'w', encoding='utf-8').write(md.replace('（约15分钟）', '（约16分钟）', 1))
+    expect('负样本：某环节用时差 1 分钟', 1,
+           [sys.executable, CHECK_CONSISTENCY, '--contract', cp, '--md', q2], must_fail=2)
+    q3d = os.path.join(d, 'neg-refs')
+    os.makedirs(q3d, exist_ok=True)
+    q3 = os.path.join(q3d, base)
+    open(q3, 'w', encoding='utf-8').write(md.replace('1. https://a.example/1' + NL, '', 1))
+    expect('负样本：参考资料漏掉甲级来源', 1,
+           [sys.executable, CHECK_CONSISTENCY, '--contract', cp, '--md', q3], must_fail=4)
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--workspace', default=os.environ.get('JIAOAN_WORKSPACE', '/root/dsh-workspace/工作文件'))
@@ -387,6 +496,8 @@ def main():
     try:
         research_tests(root)
         lesson_tests(root, a.workspace)
+        contract_tests(root)
+        consistency_tests(root)
     finally:
         shutil.rmtree(root, ignore_errors=True)
     print('')

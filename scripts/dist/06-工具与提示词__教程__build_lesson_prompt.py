@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # 从技能 references 的 01/02 拼装工作区可复制提示词（唯一生成物，勿手工改）。
-# 版本：v2.4（2026-09-30）  用法：python3 build_lesson_prompt.py
+# 版本：v2.5（2026-10-27）  用法：python3 build_lesson_prompt.py
+# v2.5：提示词正文在 01/02/06 之前并入 references/00-入口路由.md（先定入口再走主干）。
 # 技能版本号从 SKILL.md frontmatter 自动读取，禁止在本脚本内写死。
 import os, re, sys
 NL = chr(10)
@@ -68,11 +69,15 @@ head = [
     "",
     "> 用途：作为后续生成任意九年级物理课时教案的可复用提示词。",
     "> 版本：v" + ver + "（本文件由 build_lesson_prompt.py 自动生成，请勿手工修改）",
-    "> 源文件：技能 references/01-教案生成要求.md ＋ 02-教学设计细则.md ＋ 06-课件修改与排版.md",
+    "> 源文件：技能 references/00-入口路由.md ＋ 01-教案生成要求.md ＋ 02-教学设计细则.md ＋ 06-课件修改与排版.md",
     "> 状态：与本文件冲突时，以技能 SKILL.md 与 references 为准。",
     "",
 ]
-body_txt = body("references/01-教案生成要求.md") + NL + NL + body("references/02-教学设计细则.md") + NL + NL + "## 附录：课件修改与排版要求" + NL + NL + body("references/06-课件修改与排版.md")
+body_txt = ("## 入口路由（先看这里）" + NL + NL + body("references/00-入口路由.md") + NL + NL
+             + body("references/01-教案生成要求.md") + NL + NL
+             + body("references/02-教学设计细则.md") + NL + NL
+             + "## 附录：课件修改与排版要求" + NL + NL
+             + body("references/06-课件修改与排版.md"))
 open(OUT, "w", encoding="utf-8").write(NL.join(head) + NL + body_txt + NL)
 print("OK", OUT, os.path.getsize(OUT), "skill v" + ver)
 for rel, out in [("references/03-教学研究参考.md", OUT_REF),

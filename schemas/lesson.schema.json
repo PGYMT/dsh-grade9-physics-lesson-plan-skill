@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/lesson.schema.json",
+  "title": "课时契约 lesson.json",
+  "description": "一节课的安排：身份、目标、流程、板书、材料、来源六组。契约不设 version 字段，避免历史契约随发版变非法。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "chapter",
+    "section",
+    "title",
+    "textbook",
+    "duration_min",
+    "experiment_mode",
+    "version_tag",
+    "draft",
+    "objectives",
+    "segments",
+    "boards",
+    "student_sheets",
+    "deck_pages",
+    "sources"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+-(第[0-9]+课时|1课时|练习课)$",
+      "description": "节号-课时标识，如 15.2-第1课时"
+    },
+    "chapter": {
+      "type": "string",
+      "minLength": 2,
+      "description": "章名，如 第十五章 电流和电路"
+    },
+    "section": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$",
+      "description": "节号，如 15.2"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 2,
+      "description": "节名，如 电流和电路"
+    },
+    "textbook": {
+      "type": "string",
+      "minLength": 2,
+      "description": "教材版本"
+    },
+    "duration_min": {
+      "type": "integer",
+      "minimum": 20,
+      "maximum": 60,
+      "description": "课时长度（分钟）"
+    },
+    "experiment_mode": {
+      "enum": [
+        "仅多媒体",
+        "教师演示实验"
+      ],
+      "description": "实验条件版本"
+    },
+    "version_tag": {
+      "type": "string",
+      "description": "文件名里的版本段，如 第1课时-仅多媒体-详案"
+    },
+    "draft": {
+      "type": "boolean",
+      "description": "true＝默认骨架尚未填实"
+    },
+    "objectives": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 12,
+      "description": "教学目标，四维度每维至少 1 条",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dimension",
+          "text"
+        ],
+        "properties": {
+          "dimension": {
+            "enum": [
+              "物理观念",
+              "科学思维",
+              "科学探究",
+              "科学态度与责任"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 80,
+            "description": "学生视角、可测可评的单句；含条件或标准的句子 ≤40 字"
+          }
+        }
+      }
+    },
+    "segments": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 12,
+      "description": "课堂环节，按上课顺序排列；minutes 之和必须等于 duration_min",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "minutes",
+          "kind"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "description": "环节名，与 md 的「### 环节N …」同名"
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          },
+          "kind": {
+            "enum": [
+              "导入",
+              "新授",
+              "练习",
+              "小结",
+              "作业",
+              "讲评"
+            ]
+          }
+        }
+      }
+    },
+    "boards": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "max_lines",
+        "max_chars"
+      ],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2,
+          "description": "板书块数 1—2"
+        },
+        "max_lines": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8,
+          "description": "每块行数上限 ≤8"
+        },
+        "max_chars": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 14,
+          "description": "每行字数上限 ≤14"
+        }
+      }
+    },
+    "student_sheets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "学生用件（导学案/观察记录表）名称；不印发写空数组"
+    },
+    "deck_pages": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "本课时用到的课件页码范围，如 第1—17页"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 3,
+      "description": "备课来源；至少 3 条，且教案/课件/练习各至少 1 条",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "url",
+          "fetched_date",
+          "type",
+          "level",
+          "sha256_16"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "pattern": "^https?://"
+          },
+          "fetched_date": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-?[0-9]{2}-?[0-9]{2}$"
+          },
+          "type": {
+            "enum": [
+              "教案",
+              "课件",
+              "练习",
+              "导学案",
+              "板书",
+              "视频",
+              "文献",
+              "其他"
+            ]
+          },
+          "level": {
+            "enum": [
+              "甲",
+              "乙",
+              "丙"
+            ]
+          },
+          "sha256_16": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{16}$"
+          }
+        }
+      }
+    }
+  }
+}
