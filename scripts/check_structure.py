@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """check_structure.py — 教案技能结构一致性校验（v1.3，2026-10-27）。
 
-校验八类：
+校验十一类：
   1. 版本号单源：唯一真源是 SKILL.md frontmatter；其余 12 处版本头由 scripts/inject_version.py 注入，
      不允许有占位符残留或与真源不一致（报文件与行）。
   2. 脚本名单三处一致：check_deps.py 的 WS_SCRIPTS＋SKILL_SCRIPTS、references/04 的脚本表与校验清单、scripts/dist/ 文件。
@@ -13,6 +13,9 @@
   6. 技能根两个新脚本（check_research.py、check_lesson.py）存在，且在 04 与 DEPENDENCIES 有登记。
   7. 正文中的「文件 §节号」交叉引用目标存在；跳过 04 变更记录与 README 版本记录。
   8. references/04 §1 配套脚本表与实际脚本文件一一对应（不多列、不漏列）。
+  9. 顶部目录与正文标题一一对应。
+ 10. 开读字数上限：开读三份合计 ≤45KB，01/02 各 ≤21KB。
+ 11. references/*.md 全部登记在 references/04 §1「文件构成」表。
 
 用法：
   python3 scripts/check_structure.py [--workspace DIR]
@@ -182,6 +185,22 @@ def table_targets(ws):
             out[name] = os.path.join(ws, pos, name)
     return out
 
+
+
+def doc_table_names():
+    """04 §1「文件构成」表里列出的 references/*.md 文件名。"""
+    t = rd(os.path.join(SKILL_DIR, 'references', '04-技能维护规范.md'))
+    if '\n## 1. 文件构成' not in t:
+        return []
+    seg = t.split('\n## 1. 文件构成', 1)[1].split('\n### 权威源', 1)[0]
+    out = []
+    for ln in seg.split('\n'):
+        if not ln.startswith('| references/'):
+            continue
+        cells = [c.strip() for c in ln.strip().strip('|').split('|')]
+        if len(cells) >= 2 and cells[1].endswith('.md'):
+            out.append(cells[1])
+    return out
 
 
 READ_BUDGET = 45 * 1024
@@ -365,6 +384,11 @@ def main():
         n = read_bytes(rel)
         check('单份上限 %dKB %s' % (cap // 1024, os.path.basename(rel)), 0 < n <= cap,
               '当前 %dB' % n)
+
+    print('== 11. 04 §1 文件构成表覆盖 references/*.md ==')
+    listed_docs = doc_table_names()
+    miss_docs = sorted(n for n in REFS if n not in listed_docs)
+    check('references/*.md 全部登记在 04 §1', not miss_docs, '; '.join(miss_docs))
 
     bad = [n for n, ok, _ in RESULTS if not ok]
     print('')

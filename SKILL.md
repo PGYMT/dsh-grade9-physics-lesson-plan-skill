@@ -1,13 +1,13 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 9.0.0
+version: 9.0.1
 license: CC-BY-4.0
 description: Use when asked to generate or revise a Grade 9 physics lesson plan (九年级物理教案) from a Seewo .enbx, per the saved 教案生成要求, or to add pages to an .enbx (改课件/加页). Defaults to 40 min/period; outputs only the 详案/逐字稿 (Markdown + Word) for new and practice lessons. Research-first via the 教学资源取件手册, routes by entry (references/00-入口路由.md), runs check_contract.py + check_consistency.py + check_research.py + check_lesson.py before delivery; can add native-text pages (click-to-reveal answers) to an .enbx copy, original untouched. Not for 'how do I use this skill'.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v9.0.0
+> 版本：v9.0.1
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 > 先读 references/00-入口路由.md：判入口、走主干、看失败分支都在那儿。
 
@@ -60,14 +60,14 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
    2.4 降级链：每站每栏目最多试 1 次；遇 403／验证码／登录墙／付费墙立刻换替代源，不重试、不硬闯。
    2.5 取件落地：能直抓的存 08-网络资源/ 对应目录（原件优先；快照存 md文件/，写明来源链接＋抓取日期＋获取程度）；先按「同一课题 docx＋md 算 1 份」归并，再算 sha256 前 16 位去重；写盘前先跑 organize.py plan --dest。
    2.6 质量判断：先过可用性门槛（5 条＋正文底线），再按 references/07 分类型打分（甲/乙/丙）；有效数（甲＋乙）低于下限 → 生成《人工取件清单》请你获取；其余继续。
-   2.7 出七维度借鉴清单（各条带来源链接＋抓取日期＋采用/规避）与「分课时安排表」，**先出安排表、后出摘要**；摘要按 01 §0.5 规格落盘。
+   2.7 出七维度借鉴清单（各条带来源链接＋抓取日期＋采用/规避）与「分课时安排表」，**先出安排表、后出摘要**；摘要按 08 §5 规格落盘。
    2.8 跑调研校验：python3 ~/.dsh/skills/generate-9th-grade-physics-lesson-plan/scripts/check_research.py --workspace "<工作区>" --chapter "<章节>" --section "<节号+节名>" --summary "<摘要路径>"；把输出连同 2.7 的摘要一起给用户确认；**确认之后才进第 5 步**——摘要没过目就动笔，方向错了整篇要重写。
    2.9 写完详案后（交付前）再跑一次：同一脚本加 --lesson "<详案.md>"，判「九、参考资料」可溯源。
    仅当用户明确不允许联网或网络确实不可用时才可跳过（2.2–2.8），并在教案「九、参考资料」注明「本次未做网络调研＋原因」。
 3. **写课程契约**：`<详案名>.lesson.json`，六组字段见 00 §6.1；判不出结构先用默认骨架（00 §6.2）并标 `draft: true`；写前跑 check_contract.py（10 项）。
 4. **确认**：把契约一句话概括给老师（环节、各几分钟、几块板书），拿到「行」再动笔——**硬门槛二**。
-5. **写 详案.md**：按 01 的结构与需求 1–9 一次写全（逐字稿＋就地标注＋板书 ```board 源码）；写完不整篇重写。写完跑 check_consistency.py（5 项），不过就改 md 迁就契约。
-6. **一键生成 docx＋板书图**：运行 `~/.dsh/skills/generate-9th-grade-physics-lesson-plan/scripts/build_docx.py`（技能内自带，不再用工作区那份），把 board 渲染成 PNG 插入 docx；板书旁批标红；脚本在生成结束处自动打印 check_lesson.py 的板书规格校验结果（调不到脚本只提示、不中断生成）。需要连契约一起查时加 `--contract <契约.json>`。
+5. **写 详案.md**：按 01 的结构与需求 1–9 一次写全（逐字稿＋就地标注＋板书 ```board 源码）；写完不整篇重写。写完跑 check_consistency.py（6 项），不过就改 md 迁就契约。
+6. **一键生成 docx＋板书图**：运行 `~/.dsh/skills/generate-9th-grade-physics-lesson-plan/scripts/build_docx.py`（技能内自带，不再用工作区那份），把 board 渲染成 PNG 插入 docx；板书旁批标红；脚本在生成结束处自动打印 check_lesson.py 的板书规格校验结果（调不到脚本只提示、不中断生成）。需要连契约一致校验一起查时加 `--contract <契约.json>`（转给 check_lesson.py）。
 7. **自检＋汇报**：按 02 §6 做「条目｜结论｜证据」三列回报（机械项交 check_lesson.py，证据写「check_lesson.py 第 N 项 PASS」；人工项逐条给数字/文件名/行号）；汇报写文件路径、改动点、可继续调整处。
 
 ### 3.2 若任务是“修订已有教案”（分支）
@@ -110,6 +110,7 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 | 内容主体：结构、两稿分工、需求 1–9 | references/01-教案生成要求.md |
 | 教学语言红线、板书规格、标注体系、目标叙写、教案自检清单 | references/02-教学设计细则.md |
 | 关键观点与文献 | references/03-教学研究参考.md |
+| 备课调研全流程：取件顺序、判质量、六块摘要格式、中断降级 | references/08-备课调研.md |
 | 资源取件手册（0–9 章：省事通道＋教材/教案/导学案/课件/试题/视频/板书/文献/工具） | references/05-教学资源网站.md |
 | 网络资源可用性与有效性判定（门槛 5 条、五类打分维度与分线、适配轴、输出格式） | references/07-网络资源参考价值评价维度.md |
 | 改 .enbx 课件、课件选题与排版、课件自检、官方依据与官方 API 备选（§8／§2.7） | references/06-课件修改与排版.md |

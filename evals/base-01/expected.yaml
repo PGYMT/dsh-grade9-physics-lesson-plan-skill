@@ -8,7 +8,7 @@ checks:
     expect: pass
   - id: M2
     kind: machine
-    name: 正文与安排表一致五项（L2）
+    name: 正文与安排表一致六项（L2）
     how: consistency
     expect: pass
   - id: M3

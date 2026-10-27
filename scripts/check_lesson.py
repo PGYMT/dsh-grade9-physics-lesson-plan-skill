@@ -18,7 +18,7 @@
      --warn-only 时第 5、8、9 项降为提示，不影响退出码（复检历史旧稿用）。
 提示项（不影响退出码）：每行字数 ≤14、科学思维 ≥2 类、科学探究 ≥2 类、目标单句 ≤40 字、同一操作口径唯一（互斥说法同现）、两版该同部分一致（--pair）。
 视觉层：把内嵌板书图导出并打印路径，供模型 read_image 复核；--export-dir（或 JIAOAN_EXPORT_DIR）指定导出目录，缺省临时目录，指定目录不可写时自动退回临时目录。
-契约层：--contract 课程契约.json 时，末尾再跑 check_consistency.py 的 5 项（L2 一致层），结果并入本脚本退出码；不传时输出与旧版逐字节一致。
+契约层：--contract 课程契约.json 时，末尾再跑 check_consistency.py 的 6 项（L2 一致层），结果并入本脚本退出码；不传时输出与旧版逐字节一致。
 退出码：0=全绿；1=有失败项。
 """
 import argparse
@@ -57,8 +57,9 @@ def item(name, ok, detail='', soft=False):
     print('  [%s] 第%d项 %s%s' % ('PASS' if ok else 'FAIL', ITEM_NO, name, ('  ' + detail) if detail else ''))
 
 
-def warn(name, detail=''):
-    print('  [WARN] %s%s' % (name, ('  ' + detail) if detail else ''))
+def warn(name, detail='', ok=False):
+    print('  [%s] %s（提示项）%s' % ('PASS' if ok else 'WARN', name,
+                                   ('  ' + detail) if detail else ''))
 
 
 def skip(name, detail=''):
@@ -233,7 +234,7 @@ def main():
     ap.add_argument('--pair', default='', help='另一版详案 md：比对板书块与环节标题行')
     ap.add_argument('--warn-only', action='store_true', help='第 5、8、9 项降为提示（复检历史旧稿用）')
     ap.add_argument('--contract', default='',
-                    help='可选的课程契约 json；传了就在末尾加跑 5 项一致校验（L2）')
+                    help='可选的课程契约 json；传了就在末尾加跑 6 项一致校验（L2）')
     a = ap.parse_args()
     WARN_ONLY[0] = a.warn_only
     md_path = a.md
@@ -343,28 +344,34 @@ def main():
         for r in board_rows(b):
             if actual_chars(r) > 14:
                 over.append(r)
-    warn('每行字数 <=14', '超标 %d 行' % len(over) if over else '通过')
+    warn('每行字数 <=14', '超标 %d 行' % len(over) if over else '', ok=not over)
     think = [k for k in ['模型建构', '科学推理', '科学论证', '质疑创新'] if k in md]
     acts = [k for k in ['抽象', '比较', '归纳', '推理', '类比', '质疑', '修正'] if k in md]
-    warn('科学思维 >=2 类', '要素 %d 个／动作 %d 个' % (len(think), len(acts)))
+    warn('科学思维 >=2 类', '要素 %d 个／动作 %d 个' % (len(think), len(acts)),
+         ok=len(think) >= 2 or len(acts) >= 2)
     inq = [k for k in ['提出问题', '获取证据', '作出解释', '交流评估'] if k in md]
-    warn('科学探究 >=2 类', '命中 %d 个：%s' % (len(inq), '／'.join(inq)))
+    warn('科学探究 >=2 类', '命中 %d 个：%s' % (len(inq), '／'.join(inq)), ok=len(inq) >= 2)
     seg = md
     i = md.find('三、教学目标')
     j = md.find('四、教学重难点')
     if i >= 0 and j > i:
         seg = md[i:j]
-    long = [s for s in re.split(r'[；;。]', seg) if len(s.strip()) > 40]
-    warn('目标单句 <=40 字', '超长 %d 句' % len(long) if long else '通过')
+    NL = chr(10)
+    plain = []
+    for ln in seg.split(NL):
+        ln = ln.strip().lstrip('#>*+- ').lstrip('0123456789').lstrip('.、) ').strip()
+        plain.append(ln.replace('**', '').replace('`', ''))
+    long = [s.strip() for s in re.split('[；;。' + NL + ']', NL.join(plain)) if len(s.strip()) > 40]
+    warn('目标单句 <=40 字', '超长 %d 句：%s' % (len(long), long[0][:30]) if long else '', ok=not long)
     PAIRS = [('停两次', '停一次'), ('最右端', '最左端'), ('滑片向右移', '滑片向左移')]
     clashes = ['%s／%s' % (x, y) for x, y in PAIRS if x in md and y in md]
-    warn('同一操作口径唯一', ('同现：' + '；'.join(clashes)) if clashes else '通过')
+    warn('同一操作口径唯一', ('同现：' + '；'.join(clashes)) if clashes else '', ok=not clashes)
     if a.pair:
         if not os.path.isfile(a.pair):
             warn('两版该同部分一致', '配对文件不存在：' + a.pair)
         else:
             diffs = compare_common(md, read(a.pair))
-            warn('两版该同部分一致', '一致' if not diffs else '；'.join(diffs))
+            warn('两版该同部分一致', '' if not diffs else '；'.join(diffs), ok=not diffs)
 
     print('== 视觉层：导出内嵌板书图 ==')
     if media:

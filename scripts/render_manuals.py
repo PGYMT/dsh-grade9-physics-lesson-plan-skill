@@ -67,15 +67,15 @@ def render_sites(s):
 
 def render_05(sources):
     parts = [
-        '### 0.3 速查：要什么先去哪（按资源类型）',
+        '### 0.1 速查：要什么先去哪（按资源类型）',
         '',
         render_quick(sources),
         '',
-        '### 0.1 登录后免费下载的 10 个站',
+        '### 0.2 登录后免费下载的 10 个站',
         '',
         render_login(sources),
         '',
-        '### 0.2 免登录就能下的 4 个站',
+        '### 0.3 免登录就能下的 4 个站',
         '',
         render_direct(sources),
         '',

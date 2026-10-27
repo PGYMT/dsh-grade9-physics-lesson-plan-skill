@@ -472,7 +472,7 @@ def consistency_tests(root):
     d = os.path.join(root, 'consistency')
     os.makedirs(d, exist_ok=True)
     cp, mp, c, md = make_pair(d)
-    expect('正样本：契约与 md 5 项全过', 0,
+    expect('正样本：契约与 md 6 项全过', 0,
            [sys.executable, CHECK_CONSISTENCY, '--contract', cp, '--md', mp])
     base = os.path.basename(mp)
     q2d = os.path.join(d, 'neg-minutes')

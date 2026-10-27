@@ -18,6 +18,7 @@ StudentReply 样式（楷体、灰色）。
   3. 在分节符前写两行生成信息：本教案由教案技能 vX 生成（生成脚本／生成日期）、最近一次修改；
   4. 生成后自检图片三件套、版本块与 v8 结构（九个固定章节、outlineLvl、旁批样式、pageBreakBefore）；
   5. 生成后可选调用本技能 scripts/check_lesson.py 复核板书规格（失败只提示，不中断）。
+   传 --contract 时一并跑契约↔正文一致校验（同样只提示）。
 
 用法（与合并前的 v9 完全一致的旧接口）：
   python3 build_docx.py <a.md> [b.md…]          # 只处理显式给出的 md
@@ -498,13 +499,15 @@ def _skill_dir():
     return ''
 
 
-def _run_lesson_check(out_path, md_path):
+def _run_lesson_check(out_path, md_path, contract=''):
     skill = _skill_dir()
     p = os.path.join(skill, 'scripts', 'check_lesson.py') if skill else ''
     if not p or not os.path.isfile(p):
         print('  [提示] 未找到 check_lesson.py（路径：%s），跳过板书规格校验' % (p or '未定位技能目录'))
         return
     cmd = [sys.executable, p, '--docx', out_path, '--md', md_path]
+    if contract:
+        cmd += ['--contract', contract]
     if skill:
         cmd += ['--skill', skill]
     try:
@@ -786,6 +789,8 @@ def _build_parser():
     p.add_argument('--out-dir', metavar='DIR', help='指定输出目录，文件名沿用默认规则')
     p.add_argument('--verify', action='store_true', help='只校验 docx，不写文件')
     p.add_argument('--dry-run', action='store_true', help='只列出 md→docx，不写文件')
+    p.add_argument('--contract', metavar='JSON',
+                   help='可选课程契约 json；转给 check_lesson.py 顺带跑一致校验')
     return p
 
 
@@ -856,7 +861,7 @@ def main():
         out = _out_path(md, ns)
         stats = make_docx_v9(md, out, ver)
         print('[写出]', os.path.basename(out), stats, '技能版本', ver)
-        _run_lesson_check(out, md)
+        _run_lesson_check(out, md, ns.contract)
     return 0
 
 
