@@ -6,13 +6,14 @@
   python3 scripts/check_consistency.py --contract 课时契约.json --md 详案.md
   python3 scripts/check_consistency.py --contract 课时契约.json --md 详案.md --fix
 
-5 项（每项带连续「第N项」；一次报全，不报一处修一处）：
+6 项（每项带连续「第N项」；一次报全，不报一处修一处）：
   1. 环节标题数：md 里「### 环节…」的条数＝契约 segments 条数；
   2. 各环节用时逐条：md 每个环节标题里的（约N分钟）＝契约里该环节的 minutes；
   3. 板书块数：md 里「## 板N」的块数＝契约 boards.count；
   4. 参考资料覆盖甲/乙级来源：契约里 level 为甲或乙的每条来源，其 url 必须出现在
      md「九、参考资料」一节（只覆盖契约里最高两级，丙级不强制）；
-  5. 文件名与 id 匹配：md 文件名＝section＋title＋"-"＋version_tag。
+  5. 文件名与 id 匹配：md 文件名＝section＋title＋"-"＋version_tag；
+  6. 必做实验（仅当契约填了 curriculum_ref.required_experiment）：segments 里要有 kind 为「实验」的环节。
 
 硬规则：以契约为准改 md，不允许改契约迁就 md。
 
@@ -22,7 +23,7 @@
 修不了的（环节条数不符、板书块数不符、来源缺链接）一律列为「还需你判断」，不猜。
 输出固定两行：已自动修复 N 处 / 还需你判断 M 处。
 
-退出码：0＝5 项全过；1＝有失败项。
+退出码：0＝全过；1＝有失败项。
 """
 import argparse
 import json
@@ -111,7 +112,7 @@ def md_sections(md):
 
 def main():
     ap = argparse.ArgumentParser(
-        description='契约与正文一致性校验（L2）：5 项，写完正文后跑。',
+        description='契约与正文一致性校验（L2）：6 项，写完正文后跑。',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''字段词表与最小示例见 check_contract.py --help；
 契约完整定义见 schemas/lesson.schema.json，样例见 schemas/example.lesson.json。
@@ -121,6 +122,7 @@ def main():
   md「## 板1（主板）」              ←→ boards.count
   md「## 九、参考资料」里的链接       ←→ sources 里 level 为甲/乙的 url
   md 文件名                        ←→ section+title+"-"+version_tag
+  md「### 环节四 …（实验）」        ←→ segments 里有 kind=实验（契约填了 curriculum_ref.required_experiment 时才判）
 
 硬规则：以契约为准改 md，不允许改契约迁就 md。
 ''')
@@ -135,14 +137,14 @@ def main():
             d = json.load(f)
     except Exception as e:
         print('  [FAIL] 契约读不了：%s（%s）' % (ns.contract, e))
-        print('\n结果：5 项，失败 1 项')
+        print('\n结果：6 项，失败 1 项')
         return 1
     try:
         with open(ns.md, encoding='utf-8') as f:
             md = f.read()
     except Exception as e:
         print('  [FAIL] 详案读不了：%s（%s）' % (ns.md, e))
-        print('\n结果：5 项，失败 1 项')
+        print('\n结果：6 项，失败 1 项')
         return 1
 
     segs = [s for s in d.get('segments', []) if isinstance(s, dict)]
@@ -200,6 +202,18 @@ def main():
     base = re.sub(r'\.(md|docx)$', '', os.path.basename(ns.md))
     item('文件名与 id 匹配', base == want_name,
          'md 文件名 %s，契约拼出 %s' % (base, want_name))
+
+    cref = d.get('curriculum_ref') or {}
+    exp = cref.get('required_experiment') if isinstance(cref, dict) else None
+    if exp:
+        has_exp = any(str(sg.get('kind', '')) == '实验' for sg in segs)
+        item('必做实验环节', has_exp,
+             ('契约 required_experiment=%s，segments 里%s kind=实验 的环节' % (
+                 exp, '有' if has_exp else '没有')))
+    else:
+        NO[0] += 1
+        RESULTS.append(('必做实验环节', True))
+        print('  [SKIP] 第6项 必做实验环节  契约没填 curriculum_ref.required_experiment')
 
     failed = [n for n, ok in RESULTS if not ok]
     print('\n结果：%d 项，失败 %d 项' % (len(RESULTS), len(failed)))

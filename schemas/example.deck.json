@@ -1,0 +1,43 @@
+{
+  "id": "15.2",
+  "file": "15.2第2节  电流和电路.enbx",
+  "pages": [
+    {
+      "no": 1,
+      "title": "封面：第十五章 电流和电路",
+      "knowledge": [
+        "章节课名"
+      ],
+      "animations": 0,
+      "reveal_order": [],
+      "shot": "shots/p01.png"
+    },
+    {
+      "no": 2,
+      "title": "情境导入：怎样使灯亮起来",
+      "knowledge": [
+        "电路的基本组成"
+      ],
+      "animations": 2,
+      "reveal_order": [
+        "缺电源",
+        "缺导线"
+      ],
+      "shot": "shots/p02.png"
+    },
+    {
+      "no": 3,
+      "title": "任务一 电流",
+      "knowledge": [
+        "电流的形成"
+      ],
+      "animations": 3,
+      "reveal_order": [
+        "实验器材",
+        "注意：不能短路",
+        "电流方向"
+      ],
+      "shot": "shots/p03.png"
+    }
+  ]
+}

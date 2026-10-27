@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_structure.py — 教案技能结构一致性校验（v1.2，2026-10-27）。
+"""check_structure.py — 教案技能结构一致性校验（v1.3，2026-10-27）。
 
 校验八类：
-  1. 版本号一致：SKILL.md frontmatter、SKILL.md 正文首行、references/ 下自动发现的 00–09 各文件头、README.md、DEPENDENCIES.md。
+  1. 版本号单源：唯一真源是 SKILL.md frontmatter；其余 12 处版本头由 scripts/inject_version.py 注入，
+     不允许有占位符残留或与真源不一致（报文件与行）。
   2. 脚本名单三处一致：check_deps.py 的 WS_SCRIPTS＋SKILL_SCRIPTS、references/04 的脚本表与校验清单、scripts/dist/ 文件。
   3. SKILL.md §5 索引表指向的文件都存在。
   4. 正文与工作区生成物一致：教案生成要求提示词.md 含 01/02/06 正文；教学研究参考.md＝03；
@@ -54,21 +55,12 @@ def rd(p):
         return f.read()
 
 
-def version_places():
-    v = {}
-    sk = rd(os.path.join(SKILL_DIR, 'SKILL.md'))
-    m = re.search(r'^version:\s*([0-9][^\s]*)\s*$', sk, re.M)
-    v['SKILL.frontmatter'] = m.group(1) if m else None
-    m = re.search(r'^>\s*版本：v([0-9][^\s｜]*)', sk, re.M)
-    v['SKILL.body'] = m.group(1) if m else None
-    for r in REFS:
-        m = re.search(r'^>\s*版本：v([0-9][^\s｜]*)', rd(os.path.join(SKILL_DIR, 'references', r)), re.M)
-        v[r] = m.group(1) if m else None
-    m = re.search(r'^>\s*版本：v([0-9][^\s｜]*)', rd(os.path.join(SKILL_DIR, 'README.md')), re.M)
-    v['README'] = m.group(1) if m else None
-    m = re.search(r'^>\s*版本：v([0-9][^\s｜]*)', rd(os.path.join(SKILL_DIR, 'DEPENDENCIES.md')), re.M)
-    v['DEPENDENCIES'] = m.group(1) if m else None
-    return v
+def load_scripts():
+    """把 scripts/ 下要复用的脚本模块（check_deps、inject_version）按路径加载。"""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import check_deps  # noqa: E402
+    import inject_version  # noqa: E402
+    return check_deps, inject_version
 
 
 def ws_scripts():
@@ -250,11 +242,13 @@ def main():
     a = ap.parse_args()
     ws = a.workspace
 
-    print('== 1. 版本号一致 ==')
-    v = version_places()
-    vals = {x for x in v.values() if x}
-    check('版本号一致', len(vals) == 1 and None not in v.values(),
-          '; '.join('%s=v%s' % (k, v[k]) for k in sorted(v)))
+    print('== 1. 版本号单源 ==')
+    _, iv = load_scripts()
+    bad, total, ver = iv.check()
+    det = '共 %d 处版本头，真源 v%s' % (total, ver or '?')
+    if bad:
+        det += '；' + '；'.join('%s:%d %s' % b for b in bad[:3])
+    check('版本号全部等于 frontmatter 且无占位符残留', (not bad) and total > 0, det)
 
     print('== 2. 脚本名单三处一致 ==')
     scripts = ws_scripts()

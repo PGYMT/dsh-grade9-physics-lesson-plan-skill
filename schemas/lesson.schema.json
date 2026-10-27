@@ -129,6 +129,7 @@
             "enum": [
               "导入",
               "新授",
+              "实验",
               "练习",
               "小结",
               "作业",
@@ -229,6 +230,117 @@
             "type": "string",
             "pattern": "^[0-9a-f]{16}$"
           }
+        }
+      }
+    },
+    "axes": {
+      "type": "object",
+      "description": "变更轴：这节课按哪三个维度可整体改写。改了轴只重生成受影响环节，其余逐字节不动（范围见 axis_sensitive 与 01 §2.4）。",
+      "additionalProperties": false,
+      "required": [
+        "duration_min",
+        "experiment_mode",
+        "learner_level"
+      ],
+      "properties": {
+        "duration_min": {
+          "type": "integer",
+          "minimum": 20,
+          "maximum": 60,
+          "description": "课时长度（分钟），如 40 改 30"
+        },
+        "experiment_mode": {
+          "type": "string",
+          "enum": [
+            "仅多媒体",
+            "教师演示实验",
+            "不涉及实验"
+          ],
+          "description": "实验条件；须与顶层 experiment_mode 一致"
+        },
+        "learner_level": {
+          "type": "string",
+          "enum": [
+            "薄弱",
+            "标准",
+            "较好"
+          ],
+          "description": "学生基础档：薄弱就加台阶和预设，较好就减支架"
+        }
+      }
+    },
+    "axis_sensitive": {
+      "type": "object",
+      "description": "每个轴会影响哪些环节（写环节名，或写「全部」）。不在此列表里的环节，改轴时必须逐字节不变。",
+      "additionalProperties": false,
+      "properties": {
+        "duration_min": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "课时变长/变短时允许改写的环节"
+        },
+        "experiment_mode": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "实验条件变化时允许改写的环节（通常只是实验所在环节）"
+        },
+        "learner_level": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "学生基础变化时允许改写的环节；可写「全部」"
+        }
+      }
+    },
+    "curriculum_ref": {
+      "type": "object",
+      "description": "教材与课标依据：教材名、页码、课标条目、必做实验编号。填了 required_experiment 就要求 md 里有一个 kind 为「实验」的环节（check_consistency 第 6 项）。",
+      "additionalProperties": false,
+      "required": [
+        "textbook",
+        "pages"
+      ],
+      "properties": {
+        "textbook": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "教材名与册次，如「人教版九年级全一册」"
+        },
+        "pages": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "教材页码，如 [\"P58–P61\"]"
+        },
+        "standard": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "课标条目编号与名称，如 [\"2.4.1 电流和电路\"]"
+        },
+        "required_experiment": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 60,
+          "description": "必做实验编号（如「湖南省21项第7项」）；不涉及实验填 null 或省略"
         }
       }
     }

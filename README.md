@@ -42,7 +42,7 @@
 
 ## 维护
 
-- 只改本仓库；改前备份到 `references/历史版本/`，改后跑：
+- 只改本仓库；改前先打 tag（pre-v<版本>-<批次>）当备份，改后跑：
   - `python3 /root/.dsh/skills/auto-organize-work-files/scripts/skill_link.py verify`
   - `python3 /root/.dsh/skills/auto-organize-work-files/scripts/sync_checklist.py --apply`
   - `python3 scripts/check_structure.py`

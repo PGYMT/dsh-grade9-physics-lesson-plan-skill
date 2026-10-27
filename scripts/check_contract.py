@@ -21,7 +21,7 @@
   身份  id 章-课时  chapter 章名  section 节号  title 节名  textbook 教材版本
         duration_min 分钟  experiment_mode 仅多媒体/教师演示实验/不涉及实验  version_tag 文件名版本段  draft 真假
   目标  objectives[{dimension 四维之一, text 单句}]
-  流程  segments[{name 环节名, minutes 分钟, kind 导入/新授/练习/小结/作业/讲评}]
+  流程  segments[{name 环节名, minutes 分钟, kind 导入/新授/实验/练习/小结/作业/讲评}]
   板书  boards{count 1—2, max_lines ≤8, max_chars ≤14}
   材料  student_sheets[] 学生用件名（不印发写 []）、deck_pages[] 课件页码范围
   来源  sources[{url, fetched_date, type, level, sha256_16}]
@@ -39,7 +39,7 @@ REQUIRED = ['id', 'chapter', 'section', 'title', 'textbook', 'duration_min',
             'boards', 'student_sheets', 'deck_pages', 'sources']
 MODES = ['仅多媒体', '教师演示实验', '不涉及实验']
 DIMS = ['物理观念', '科学思维', '科学探究', '科学态度与责任']
-KINDS = ['导入', '新授', '练习', '小结', '作业', '讲评']
+KINDS = ['导入', '新授', '实验', '练习', '小结', '作业', '讲评']
 TYPES = ['教案', '课件', '练习', '导学案', '板书', '视频', '文献', '其他']
 LEVELS = ['甲', '乙', '丙']
 ID_RE = re.compile(r'^[0-9]+\.[0-9]+-(第[0-9]+课时|1课时|练习课)$')

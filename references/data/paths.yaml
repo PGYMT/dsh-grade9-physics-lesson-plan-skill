@@ -1,0 +1,11 @@
+version: 1
+tested: 2026-10-27
+# 本技能用到的绝对路径集中在这里，文档与脚本一律从这里取，不要各写一份。
+# 换机器只改这一个文件；改完跑 python3 scripts/check_portability.py。
+workspace: /root/dsh-workspace/工作文件
+offline_pack: /mnt/d/教学打包素材
+fonts_dir: /mnt/c/Windows/Fonts
+skill_repo: /root/skill-repos/g9-physics
+# 运行入口（软链，勿直接编辑）与 Windows 侧写法，便于文档与命令复用。
+skill_entry: /root/.dsh/skills/generate-9th-grade-physics-lesson-plan
+offline_pack_win: D:/教学打包素材

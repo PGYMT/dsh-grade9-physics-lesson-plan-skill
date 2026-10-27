@@ -89,5 +89,15 @@
       "level": "乙",
       "sha256_16": "1b910c8bedd5b99f"
     }
-  ]
+  ],
+  "curriculum_ref": {
+    "textbook": "人教版（2024）九年级物理全一册",
+    "pages": [
+      "P100—P104"
+    ],
+    "standard": [
+      "「能量」主题·「电磁能」二级主题：知道电压、电流和电阻；探究电流与电压、电阻的关系，理解欧姆定律"
+    ],
+    "required_experiment": null
+  }
 }

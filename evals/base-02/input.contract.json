@@ -79,5 +79,15 @@
       "level": "甲",
       "sha256_16": "0e46f88228a34f43"
     }
-  ]
+  ],
+  "curriculum_ref": {
+    "textbook": "人教版（2024）九年级物理全一册",
+    "pages": [
+      "P74—P77"
+    ],
+    "standard": [
+      "「能量」主题·「电磁能」二级主题：知道电压，会使用电压表测量电压"
+    ],
+    "required_experiment": null
+  }
 }
