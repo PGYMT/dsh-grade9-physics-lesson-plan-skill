@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_structure.py — 教案技能结构一致性校验（v1.0，2026-09-30）。
+"""check_structure.py — 教案技能结构一致性校验（v1.1，2026-10-27）。
 
-校验七类：
+校验八类：
   1. 版本号一致：SKILL.md frontmatter、SKILL.md 正文首行、references/01–07 文件头、README.md、DEPENDENCIES.md。
-  2. 脚本名单三处一致：check_deps.py 的 WS_SCRIPTS、references/04 的脚本表与校验清单、scripts/dist/ 文件。
+  2. 脚本名单三处一致：check_deps.py 的 WS_SCRIPTS＋SKILL_SCRIPTS、references/04 的脚本表与校验清单、scripts/dist/ 文件。
   3. SKILL.md §5 索引表指向的文件都存在。
   4. 正文与工作区生成物一致：教案生成要求提示词.md 含 01/02/06 正文；教学研究参考.md＝03；
      教学资源取件手册.md＝05、网络资源参考价值评价维度.md＝07。
-  5. scripts/dist/ 各副本与工作区脚本逐字节一致。
+  5. scripts/dist/ 各副本与源文件逐字节一致（工作区脚本、技能内脚本）；板书脚本的工作区投影与技能内一致。
   6. 技能根两个新脚本（check_research.py、check_lesson.py）存在，且在 04 与 DEPENDENCIES 有登记。
   7. 正文中的「文件 §节号」交叉引用目标存在；跳过 04 变更记录与 README 版本记录。
+  8. references/04 §1 配套脚本表与实际脚本文件一一对应（不多列、不漏列）。
 
 用法：
   python3 scripts/check_structure.py [--workspace DIR]
@@ -63,6 +64,13 @@ def ws_scripts():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return dict(mod.WS_SCRIPTS)
+
+
+def skill_scripts():
+    spec = importlib.util.spec_from_file_location('cd', os.path.join(SKILL_DIR, 'scripts', 'check_deps.py'))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return dict(mod.SKILL_SCRIPTS)
 
 
 def body(rel):
@@ -137,6 +145,40 @@ def cross_references():
     return bad
 
 
+TABLE_EXT = ('.py', '.ps1', '.json')
+
+
+def script_rows():
+    """解析 04 §1 配套脚本表：返回 [(位置, 脚本名)]，只收脚本格里的文件名。"""
+    t = rd(os.path.join(SKILL_DIR, 'references', '04-技能维护规范.md'))
+    rows = []
+    for line in t.splitlines():
+        if not line.startswith('|'):
+            continue
+        cells = [c.strip().strip('`') for c in line.strip().strip('|').split('|')]
+        if len(cells) != 3:
+            continue
+        pos, name = cells[0], cells[1]
+        if not name.endswith(TABLE_EXT) or '/' in name or ' ' in name:
+            continue
+        rows.append((pos, name))
+    return rows
+
+
+def table_targets(ws):
+    """把脚本表的「位置＋脚本名」解析成实际路径。"""
+    out = {}
+    for pos, name in script_rows():
+        if '技能根' in pos:
+            base = os.path.join(SKILL_DIR, 'scripts')
+            if 'tests' in pos:
+                base = os.path.join(base, 'tests')
+            out[name] = os.path.join(base, name)
+        else:
+            out[name] = os.path.join(ws, pos, name)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--workspace', default=DEFAULT_WS)
@@ -151,12 +193,14 @@ def main():
 
     print('== 2. 脚本名单三处一致 ==')
     scripts = ws_scripts()
+    own = skill_scripts()
     t04 = rd(os.path.join(SKILL_DIR, 'references', '04-技能维护规范.md'))
     check('04 正文列出全部工作区脚本', all(os.path.basename(k) in t04 for k in scripts))
+    check('04 正文列出全部技能内脚本', all(s in t04 for s in own))
     dist = os.path.join(SKILL_DIR, 'scripts', 'dist')
     dist_files = set(os.listdir(dist)) if os.path.isdir(dist) else set()
-    want = {k.replace('/', '__') for k in scripts}
-    check('scripts/dist 与 WS_SCRIPTS 一一对应', dist_files == want,
+    want = {k.replace('/', '__') for k in scripts} | set(own)
+    check('scripts/dist 与「工作区脚本＋技能内脚本」一一对应', dist_files == want,
           'dist=%d want=%d' % (len(dist_files), len(want)))
 
     print('== 3. SKILL 索引目标存在 ==')
@@ -183,7 +227,7 @@ def main():
     check('网络资源参考价值评价维度.md＝07',
           os.path.isfile(dim_p) and rd(dim_p).rstrip() == rd(os.path.join(SKILL_DIR, 'references/07-网络资源参考价值评价维度.md')).rstrip())
 
-    print('== 5. dist 副本与工作区脚本逐字节一致 ==')
+    print('== 5. dist 副本与源文件逐字节一致 ==')
     for rel in scripts:
         src = os.path.join(ws, rel)
         dst = os.path.join(dist, rel.replace('/', '__'))
@@ -194,6 +238,20 @@ def main():
             check('dist 副本存在 ' + rel, False, '缺失')
             continue
         check('dist 一致 ' + os.path.basename(rel), rd(src) == rd(dst))
+    for s in own:
+        src = os.path.join(SKILL_DIR, 'scripts', s)
+        dst = os.path.join(dist, s)
+        if not os.path.isfile(src):
+            check('技能内脚本存在 ' + s, False, '缺失')
+        elif not os.path.isfile(dst):
+            check('dist 副本存在 ' + s, False, '缺失')
+        else:
+            check('dist 一致（技能内） ' + s, rd(src) == rd(dst))
+    proj = os.path.join(ws, '06-工具与提示词/教程/build_board_png.py')
+    mine = os.path.join(SKILL_DIR, 'scripts', 'build_board_png.py')
+    check('build_board_png.py 工作区投影与技能内一致',
+          os.path.isfile(proj) and os.path.isfile(mine) and rd(proj) == rd(mine),
+          '工作区那份须是技能内副本的逐字投影')
 
     print('== 6. 技能新脚本存在与登记 ==')
     tdep = rd(os.path.join(SKILL_DIR, 'DEPENDENCIES.md'))
@@ -204,6 +262,20 @@ def main():
     print('== 7. 交叉引用目标存在 ==')
     miss = cross_references()
     check('正文「文件 §节号」引用均存在', not miss, '; '.join(miss))
+
+    print('== 8. 04 §1 脚本表与实际文件一一对应 ==')
+    listed = table_targets(ws)
+    live = {os.path.basename(k): os.path.join(ws, k) for k in scripts}
+    live.update({s: os.path.join(SKILL_DIR, 'scripts', s) for s in own})
+    for s in ['check_structure.py', 'check_deps.py', 'check_research.py', 'check_lesson.py']:
+        live[s] = os.path.join(SKILL_DIR, 'scripts', s)
+    rt = os.path.join(SKILL_DIR, 'scripts', 'tests', 'run_tests.py')
+    if os.path.isfile(rt):
+        live['run_tests.py'] = rt
+    ghost = sorted(n for n, p in listed.items() if not os.path.isfile(p))
+    check('脚本表每行都指向真实文件', not ghost, '; '.join(ghost))
+    unlisted = sorted(n for n in live if n not in listed)
+    check('每个实际脚本都在脚本表里', not unlisted, '; '.join(unlisted))
 
     bad = [n for n, ok, _ in RESULTS if not ok]
     print('')

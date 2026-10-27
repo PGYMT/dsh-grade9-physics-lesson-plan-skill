@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_deps.py — 教案技能依赖自检与自举（v1.1，2026-10-27）。
+"""check_deps.py — 教案技能依赖自检与自举（v1.2，2026-10-27）。
 
 用法：
   python3 check_deps.py [--workspace DIR] [--install | --sync-dist]
@@ -16,11 +16,15 @@ WIN_ROOT = os.environ.get('WSL_WINDOWS_ROOT') or ('/mnt/c' if os.path.isdir('/mn
 DSH_HOME = os.environ.get('DSH_HOME') or os.path.expanduser('~/.dsh')
 DIST = os.path.join(SKILL_DIR, 'scripts', 'dist')
 
+# 技能内核心脚本：住在 scripts/ 下，另在 dist/ 留逐字节副本（v9.0.0 收编 docx 脚本后新增）
+SKILL_SCRIPTS = {
+    'build_docx.py': 'md→docx 主脚本（v8＋v9 合并，板书图/旁批/待查/生成信息块）',
+    'build_board_png.py': 'board 围栏渲染板书 PNG（build_docx.py 直接调用）',
+}
+
 # 工作区脚本清单：相对路径 -> 用途
 WS_SCRIPTS = {
-    '00-模板与规范/教案docx生成脚本-v8.py': 'docx 基础生成与样式（v9 的底层依赖）',
-    '00-模板与规范/教案docx生成脚本-v9.py': 'md→docx：板书图/旁批/待查/生成信息块',
-    '06-工具与提示词/教程/build_board_png.py': 'board 围栏渲染板书 PNG',
+    '06-工具与提示词/教程/build_board_png.py': 'board 围栏渲染板书 PNG（技能 scripts/build_board_png.py 的逐字投影）',
     '06-工具与提示词/教程/extract_enbx.py': '解包 .enbx：文本/动画/素材/视频信息',
     '06-工具与提示词/教程/build_lesson_prompt.py': '由 01+02+06 生成工作区提示词与 03/05 可读版',
     '06-工具与提示词/教程/extract_video_frames.py': '课件视频抽帧与封面',
@@ -109,7 +113,20 @@ def check(ws):
               os.path.join(DSH_HOME, 'skills/auto-organize-work-files/scripts/sync_checklist.py'),
               os.path.join(SKILL_DIR, 'SKILL.md')]:
         (ok if os.path.exists(p) else bad)(p)
-    print('== 技能脚本（不进 WS_SCRIPTS/dist） ==')
+    print('== 技能内核心脚本（docx 链路，另存 dist 副本） ==')
+    for s, why in SKILL_SCRIPTS.items():
+        p = os.path.join(SKILL_DIR, 'scripts', s)
+        if not os.path.exists(p):
+            bad(p)
+            missing.append(s)
+            continue
+        ok('%s（%s）' % (s, why))
+        if os.path.exists(os.path.join(DIST, s)):
+            ok('dist/' + s)
+        else:
+            bad('dist/' + s, 'python3 %s --sync-dist' % os.path.abspath(__file__))
+            missing.append('dist/' + s)
+    print('== 技能脚本（进 scripts/，不进 dist） ==')
     for s in ['check_research.py', 'check_lesson.py']:
         p = os.path.join(SKILL_DIR, 'scripts', s)
         if os.path.exists(p):
@@ -132,12 +149,24 @@ def install(ws):
 
 def sync_dist(ws):
     os.makedirs(DIST, exist_ok=True)
+    want = set()
     n = 0
     for rel in WS_SCRIPTS:
         src = os.path.join(ws, rel)
+        want.add(rel.replace('/', '__'))
         if not os.path.exists(src):
             continue
         shutil.copy2(src, os.path.join(DIST, rel.replace('/', '__'))); n += 1
+    for s in SKILL_SCRIPTS:
+        src = os.path.join(SKILL_DIR, 'scripts', s)
+        want.add(s)
+        if not os.path.exists(src):
+            continue
+        shutil.copy2(src, os.path.join(DIST, s)); n += 1
+    for name in sorted(os.listdir(DIST)):
+        if name not in want and os.path.isfile(os.path.join(DIST, name)):
+            os.remove(os.path.join(DIST, name))
+            print('  移除陈旧副本 ' + name)
     print('已同步 %d 个到 %s' % (n, DIST))
 
 def main():

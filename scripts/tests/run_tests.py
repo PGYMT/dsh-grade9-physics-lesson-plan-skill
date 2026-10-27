@@ -8,7 +8,7 @@
 check_research 用 8 份故意违规摘要（覆盖失败项 1-5、7、8）＋2 份合格摘要
 （常规；某类全丙但已出《人工取件清单》）；
 check_lesson 用 9 份故意违规 md/docx（覆盖失败项 1-9）＋2 份合格样本。
-docx 样本用工作区 00-模板与规范/教案docx生成脚本-v9.py 现场生成再拆改，不手搓 OOXML。
+docx 样本用技能内 scripts/build_docx.py 现场生成再拆改，不手搓 OOXML。
 退出码：0=全部符合预期；1=有样本未被判失败或正样本被误判。
 """
 import argparse
@@ -269,9 +269,9 @@ def rewrite_docx(src, dst, doc_repl=None, styles_repl=None, drop_media=False):
 
 def lesson_tests(root, ws):
     print('===== check_lesson.py =====')
-    v9 = os.path.join(ws, '00-模板与规范', '教案docx生成脚本-v9.py')
-    if not os.path.isfile(v9):
-        print('[SKIP] 找不到 v9 脚本，跳过 check_lesson 测试：' + v9)
+    build = os.path.join(SKILL_DIR, 'scripts', 'build_docx.py')
+    if not os.path.isfile(build):
+        print('[SKIP] 找不到 build_docx.py，跳过 check_lesson 测试：' + build)
         return
     ch_dir = os.path.join(root, '04-教案', '测试章')
     mdd = os.path.join(ch_dir, 'md文件')
@@ -280,10 +280,10 @@ def lesson_tests(root, ws):
     md = os.path.join(mdd, name + '.md')
     open(md, 'w', encoding='utf-8').write(base_md())
     env = dict(os.environ, JIAOAN_SKILL_DIR=SKILL_DIR)
-    p = subprocess.run([sys.executable, v9, '--dir', mdd], capture_output=True, text=True, env=env)
+    p = subprocess.run([sys.executable, build, '--dir', mdd], capture_output=True, text=True, env=env)
     docx = os.path.join(ch_dir, name + '.docx')
     if not os.path.isfile(docx):
-        print('[SKIP] v9 未生成 docx，跳过 check_lesson 测试')
+        print('[SKIP] build_docx.py 未生成 docx，跳过 check_lesson 测试')
         print(p.stdout[-500:], p.stderr[-500:])
         return
 

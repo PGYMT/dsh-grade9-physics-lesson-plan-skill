@@ -21,29 +21,48 @@ RED = (255, 125, 115)
 YELLOW = (255, 214, 102)
 
 
+def _vendor_dirs():
+    """Pillow wheel 候选目录：先本脚本旁 vendor/，再旧的 06-工具与提示词/教程/vendor。"""
+    cands = [os.path.join(HERE, "vendor")]
+    legacy = os.environ.get("JIAOAN_VENDOR_DIR") or \
+        "/root/dsh-workspace/工作文件/06-工具与提示词/教程/vendor"
+    if legacy not in cands:
+        cands.append(legacy)
+    return cands
+
+
 def _pillow():
     try:
         from PIL import Image, ImageDraw, ImageFont
         return Image, ImageDraw, ImageFont
     except Exception:
         pass
-    libs = os.path.join(HERE, "vendor", "_libs")
-    if not os.path.isdir(libs):
-        tag = "cp%d%d" % sys.version_info[:2]
-        whls = sorted(glob.glob(os.path.join(HERE, "vendor", "pillow-*.whl")))
+    tag = "cp%d%d" % sys.version_info[:2]
+    for vendor in _vendor_dirs():
+        libs = os.path.join(vendor, "_libs")
+        if os.path.isdir(libs):
+            if libs not in sys.path:
+                sys.path.insert(0, libs)
+            try:
+                from PIL import Image, ImageDraw, ImageFont
+                return Image, ImageDraw, ImageFont
+            except Exception:
+                continue
+        whls = sorted(glob.glob(os.path.join(vendor, "pillow-*.whl")))
         pick = [w for w in whls if tag in os.path.basename(w)] or \
                [w for w in whls if "py3-none-any" in os.path.basename(w)]
         if not pick:
-            raise RuntimeError(
-                "Pillow 不可用：系统未装 Pillow，vendor/ 里也没有匹配当前解释器（%s）的 wheel。"
-                "请运行 pip install pillow，或下载 pillow-*-%s-*.whl 放进 vendor/。" % (tag, tag))
+            continue
         os.makedirs(libs, exist_ok=True)
         with zipfile.ZipFile(pick[0]) as z:
             z.extractall(libs)
-    if libs not in sys.path:
-        sys.path.insert(0, libs)
-    from PIL import Image, ImageDraw, ImageFont
-    return Image, ImageDraw, ImageFont
+        if libs not in sys.path:
+            sys.path.insert(0, libs)
+        from PIL import Image, ImageDraw, ImageFont
+        return Image, ImageDraw, ImageFont
+    raise RuntimeError(
+        "Pillow 不可用：系统未装 Pillow，vendor/ 里也没有匹配当前解释器（%s）的 wheel。"
+        "请运行 pip install pillow，或把 pillow-*-%s-*.whl 放进本脚本旁的 vendor/。" % (tag, tag))
 
 
 KAI = ["/mnt/c/Windows/Fonts/simkai.ttf",
