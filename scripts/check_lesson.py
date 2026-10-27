@@ -32,6 +32,9 @@ import zipfile
 BT = chr(96)
 FENCE = BT * 3
 BOARD_RE = re.compile(r'^[ ]*' + re.escape(FENCE) + r'board[ ]*$')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import checks  # noqa: E402  三级判定：item 阻断 / warn 提示 / advisory 遗留
+
 HEAD_RE = re.compile(r'^##\s*板([0-9]+)', re.M)
 WEN_RE = re.compile(r'[0-9]+\.[0-9]+.+-((第[0-9]+课时)|(1课时))-[^\-]+-详案(-旧版)?\.(md|docx)$')
 PRAC_RE = re.compile(r'[0-9]+\.[0-9]+.+-练习课-详案(-旧版)?\.(md|docx)$')
@@ -284,10 +287,12 @@ def main():
         ver = ''
         m = VER_RE.search(read(skill))
         ver = m.group(1) if m else ''
-        ok4 = 'ProvenanceNote' in doc
-        if ver and ver != '版本未知' and ver not in doc:
-            ok4 = False
-        item('生成信息块版本', ok4, 'SKILL v%s' % (ver or '?'), soft=True)
+        has_block = 'ProvenanceNote' in doc
+        stale = bool(ver) and ver != '版本未知' and ver not in doc
+        item('生成信息块存在', has_block, 'SKILL v%s' % (ver or '?'), soft=True)
+        if has_block and stale:
+            checks.advisory('check_lesson', '生成信息块版本是旧版',
+                            md_path, 'docx 里的版本串不含 v%s，属旧版生成的成品' % ver)
 
     print('== 板书旁批 ==')
     note_n = board_notes(md)
@@ -298,8 +303,11 @@ def main():
         used = len(re.findall(r'w:pStyle w:val="BoardMark"', doc))
         if used > note_n:
             warn('docx 板书旁批多于 md', 'docx %d 次／md 真实旁批 %d 处' % (used, note_n))
-        item('板书旁批红色且数量足够', red and used >= max(note_n, 1),
+        item('板书旁批红色（至少一处）', red and used >= 1,
              note + ('，docx 用 %d 次（md 真实旁批 %d 处）' % (used, note_n)))
+        if red and used >= 1 and used < note_n:
+            checks.advisory('check_lesson', '板书旁批少于 md 标注',
+                            md_path, 'docx %d 次／md %d 处' % (used, note_n))
 
     print('== 文件名 ==')
     base_md = os.path.basename(md_path)

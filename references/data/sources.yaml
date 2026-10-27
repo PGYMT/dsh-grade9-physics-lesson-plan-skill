@@ -1,0 +1,508 @@
+# references/data/sources.yaml — 取件站点库的唯一数据源
+# 由 05 迁移（2026-10-27 批二）：每条带 last_tested / status。05 的表格由 scripts/render_manuals.py 生成。
+# access 取值：L1 直抓正文｜L2 抓节选｜L3 抓题录＋预览｜LX 不可直抓｜DL 登录免费下原件｜DL0 免登录直下。
+version: 1
+tested: 2026-10-17
+targets:
+  教案:
+    - 3
+    - 5
+  课件:
+    - 3
+    - 5
+  练习:
+    - 3
+    - 5
+  导学案:
+    - 2
+    - null
+  板书参考:
+    - 2
+    - null
+  视频: null
+channels:
+  login:
+    -
+      - 教师之家 renjiaoshe.com
+      - 免费注册
+      - 人教版（2024）九全一册：288 套课件、60 套教案；学案 / 试题栏目为 0
+      - 首页 → 物理 → 人教版 → 九年级全一册 → 课件下载 / 教案下载 → 课题 → 下载地址 → 登录后下载
+      - 优秀课件PPT/<章节>/、优秀教案/<章节>/
+    -
+      - 希沃白板课件库 k.seewo.com
+      - 免费希沃账号
+      - 互动课件 .enbx（官方称 170+ 教材版本）；可直接打开 / 改页
+      - 网页搜「<节名>」→ 登录 → 下载；或客户端「课件库」→ 按学科—版本—年级—章节
+      - 优秀课件PPT/<章节>/；要改页的进 05-课件与文本/<章节>/
+    -
+      - 国家中小学智慧教育平台 basic.smartedu.cn
+      - 手机号免费注册
+      - 学习任务单、课后作业、电子教材；教学设计 / 课件 / 视频用导出工具或客户端缓存
+      - 登录 → 课程教学 → 学科—年级—教材版本—章节 → 按提示下载 / 导出
+      - 优秀教案/<章节>/、优秀课件PPT/<章节>/
+    -
+      - 学科网 免费池 zxxk.com
+      - 免费账号登录
+      - 只下「免费 / 0 储值」：教案、课件、学案、试卷
+      - 搜索 → 筛「免费」；或目录接口加 isFree=1 → 登录下载
+      - 按类型落位；zip 解压后归并去重
+    -
+      - 21世纪教育网 21cnjy.com
+      - 免费账号登录
+      - 标「免费」的资源；付费资源要学币，不碰
+      - 搜索 → 资源页筛「免费」→ 登录下载
+      - 同上
+    -
+      - 教习网 51jiaoxi.com
+      - 免费账号登录
+      - 标「免费」的教案、课件、学案
+      - 搜索 → 筛「免费」→ 登录下载；学贝资源不碰
+      - 同上
+    -
+      - 菁优网 jyeoo.com
+      - 免费账号登录
+      - 免费题与解析片段（额度以站内为准）；组卷导出要会员
+      - 搜索题目 → 登录看解析；只取免费额度
+      - 同步优学/、练习素材/
+    -
+      - 湖南智慧教育平台 hnedu.cn
+      - 湖南教师账号免费登录
+      - 省级优课、课件、教学设计
+      - 登录（sso.hnedu.cn）→ 资源 → 学科—年级—章节
+      - 对应目录
+    -
+      - 初中物理在线 czwlzx.cn
+      - 免登录可看；部分下载要注册
+      - 人教版九年级全册课件、教案、试题；2026-10 仍在更新
+      - 首页 → 人教版九年级全册 → 资源页；标「登录」的先注册再下
+      - 对应目录
+    -
+      - 青夏教育 1010jiajiao.com
+      - 免登录
+      - 教辅答案页、同步练习答案（核对《金学典》）
+      - 搜书名 / 节名 → 答案页 → 抓正文
+      - 同步优学/…/md文件/
+  direct:
+    -
+      - 第一PPT 1ppt.com
+      - 人教版初中物理 PPT 课件
+      - 详情页正文可读，下载页给直链（2026-10-13 实测，未点按钮）
+    -
+      - 优品PPT ypppt.com
+      - 通用 PPT 模板；学科课件较少
+      - 静态站，直接下
+    -
+      - 人教社 pep.com.cn
+      - 电子教材、教师教学用书
+      - 免费，在线查阅 / 下载
+    -
+      - 无忧考网 51test.net
+      - 中考物理试题文本（网页）
+      - 免费、免登录；只有网页文本，没有文件下载
+quick:
+  -
+    - 电子教材 / 课标
+    - 人教社 pep.com.cn
+    - L1 直抓
+    - 国家中小学智慧教育平台（免费登录下载）
+  -
+    - 教案 / 教学设计
+    - 教师之家 renjiaoshe.com
+    - DL 登录免费下
+    - 21世纪教育网 → 学科网免费池 → 湖南智慧教育平台
+  -
+    - 导学案 / 学案
+    - 21世纪教育网「学案」栏目（教师之家该册学案为 0）
+    - L2/DL
+    - 教习网免费区 → 学科网免费池
+  -
+    - 课件 PPT
+    - 希沃白板课件库（.enbx）/ 第一PPT（.ppt）
+    - DL / DL0
+    - 教师之家 → 21世纪教育网
+  -
+    - 试题 / 试卷 / 组卷
+    - 学科网免费池（0 储值）
+    - DL
+    - 菁优网免费额度 → 青夏教育
+  -
+    - 微课视频 / 实验演示
+    - 哔哩哔哩 bilibili.com
+    - L2
+    - 国家平台精品课（登录 / 客户端）→ 湖南智慧教育平台
+  -
+    - 板书设计
+    - 本地 08-网络资源/板书设计参考/
+    - L1
+    - 知网板书文献 → 搜狐 / 公众号图文
+  -
+    - 教学研究文献
+    - 中国知网 cnki.net
+    - L3
+    - 万方 → 百度学术
+  -
+    - 工具站
+    - 组卷网 zujuan.xkw.com
+    - LX
+    - PDF24（格式转换）→ 本地 ffmpeg
+sites:
+  - id: S01
+    name: 人教社
+    url: https://www.pep.com.cn
+    kind: 电子教材 / 课标
+    fee: 免费
+    access: L1
+    content: 人教版电子教材、教师教学用书、教材插图、课标
+    search: 人教版 九年级物理 电子课本；九年级物理 教师教学用书
+    how: 首页 →「电子教材/下载中心」→ 按学段—学科—版本进入；正文抓成 .md，存 08-网络资源/优秀教案/<章节>/md文件/
+    fallback: 国家中小学智慧教育平台（免费登录下载）
+    volume: 随教材版本更新，长期稳定
+    access_note: 静态 HTML，教材目录、正文段落、插图页可直接抓
+  - id: S02
+    name: 教育部课标
+    url: http://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html
+    kind: 电子教材 / 课标
+    fee: 免费
+    access: L1
+    content: 《义务教育物理课程标准（2022年版）》原文、政策文件
+    search: 义务教育物理课程标准 2022 全文；初中物理 内容要求
+    how: 直接打开页面，正文抓成 .md；PDF 附件直接下载
+    fallback: 人教社课标栏目
+    volume: 官方原文，稳定，时效最快
+    access_note: 静态 HTML，课标正文与附件 PDF 链接
+  - id: S03
+    name: 国家平台
+    url: https://basic.smartedu.cn
+    kind: 电子教材 / 课标
+    fee: 免费（需登录）
+    access: LX
+    content: 部级精品课：课件＋教学设计＋逐字稿＋任务单＋作业；电子教材
+    search: 站内按「学科—年级—教材版本—章节」筛选；站外搜「国家中小学智慧教育平台 <节名> 精品课」
+    how: 见 §1.2「官方平台人工导出」
+    fallback: 人教社（教材）→ 省级平台（课例）
+    volume: 官方称 13 万余条中小学优质资源；按学期集中更新
+    access_note: 前端 WAF，匿名请求 403；数据走 CDN 接口、要登录 token，服务端抓不通
+  - id: S04
+    name: 教师之家
+    url: https://www.renjiaoshe.com
+    kind: 教案 / 教学设计
+    fee: 免费（注册即可下载；页面自述「本站所有课件只需要注册就可以下载」）
+    access: DL
+    content: 人教版（2024）九年级全一册课件、教案；该册学案/试题栏目实测为 0
+    search: 站内「物理 → 人教版 → 九年级全一册」；站外「教师之家 <节名> 课件」
+    how: 首页 → 物理 → 人教版 → 初中物理人教版(2024)九年级全一册 → 课件下载/教案下载 → 课题 → 下载地址 → 登录 → 下载；原件存 08-网络资源/优秀课件PPT/<章节>/ 或 优秀教案/<章节>/
+    fallback: 21世纪教育网 → 学科网免费池
+    volume: 2026-10-17 实测该册 288 套课件、60 套教案，按 2024 新教材章节编排，更新到当季
+    access_note: 页面 L1 可读；点「下载地址」跳登录页（脚本提示「您没有登录」），登录后免费下原件
+  - id: S05
+    name: 21世纪教育网
+    url: https://www.21cnjy.com（资源页 zy.21cnjy.com）
+    kind: 教案 / 教学设计
+    fee: 部分免费；免费账号可下带「免费」标的资源；付费资源要学币，校网通 8800—19800 元/年（不碰）
+    access: L2
+    content: 教案、教学设计、学案/导学案、课件、试卷
+    search: <节号><节名> 教学设计；<节名> 导学案
+    how: 站内搜索 → 筛「免费」→ 资源页 → 能下的登录后下原件；下不了的抓预览正文成 .md 快照（开头写来源链接＋抓取日期＋获取程度）→ 存 08-网络资源/优秀教案/<章节>/md文件/；只下 0 点资源
+    fallback: 教习网 → 学科网 → 省级平台
+    volume: 自述会员 1400 余万、资源 950 万＋套，日增 3000＋套
+    access_note: 资源详情页简介与教学设计预览正文可抓（实测约 4.7 K 字）；DL——登录免费账号可下 0 点资源，付费资源要学币
+  - id: S06
+    name: 教习网
+    url: https://www.51jiaoxi.com
+    kind: 教案 / 教学设计
+    fee: 部分免费；免费账号可下「免费」标资源；月卡 49.9 元、半年卡 99 元、尊享年卡 299 元（不碰）
+    access: L3
+    content: 教案、教学设计、课件、学案
+    search: <节名> 教学设计 教习网
+    how: 搜索 → 筛「免费」→ 文档页；能下的登录后下，学贝资源只抓元数据与首页预览成 .md 快照，标「在线来源，未落盘」
+    fallback: 21世纪教育网 → 学科网
+    volume: 实测总资源 2084 万＋套，24 小时新增 1 万＋套
+    access_note: 列表与文档页元数据可抓，预览 1/100；DL——免费账号可下免费区，其余要「学贝/会员」
+  - id: S07
+    name: 学科网
+    url: https://www.zxxk.com
+    kind: 教案 / 教学设计
+    fee: 免费账号可下 0 储值资料；VIP 8.8 元/月、23.8 元/季、88 元/年；付费池不碰
+    access: L3
+    content: 全学段全学科全版本：教案、课件、学案、试卷
+    search: site:zxxk.com <节名>；<节名> 同步备课
+    how: 搜索引擎定位详情页 → 筛免费/0 储值 → 登录下载；付费池与 /docpack/ 空壳不硬闯
+    fallback: 21世纪教育网 → 教习网
+    volume: 日更，未公开总量
+    access_note: /soft/ 详情页 JS 内嵌标题/价格等元数据；DL——免费池可下：搜索筛「免费」或目录接口加 isFree=1（2026-10 电路图专题已验证 50 份 0 储值资料）
+  - id: S08
+    name: 初中物理在线
+    url: http://czwlzx.cn
+    kind: 教案 / 教学设计
+    fee: 免费；部分下载要注册
+    access: L1
+    content: 初中物理教案、课件、试题、实验视频
+    search: 站内按「章节 → 同步备课/试题」；站外搜「初中物理在线 <节名>」
+    how: 首页 → 人教版九年级全册 → 资源页；免登录能看的先抓，标「登录」的注册后下；robots 仅禁 /Ad*、/App_* 等管理路径，仍要每栏目只试 1 次
+    fallback: 物理青蓝网 → 21世纪教育网
+    volume: 老站但仍在更新：2026-10 实测人教版九年级全册有 2026/08、2026/10 新资源
+    access_note: 静态 UTF-8 HTML（实测首页约 160 KB），列表与正文可抓；DL——注册后（/User/Register.aspx）可下部分原件
+  - id: S09
+    name: 物理青蓝网
+    url: http://www.wlqlw.com
+    kind: 教案 / 教学设计
+    fee: 免费
+    access: L1
+    content: 物理教学资源、教案、课件、试题
+    search: 物理青蓝网 <节名>
+    how: 首页 →「教学资源」→ 按章节找；正文抓成 .md
+    fallback: 初中物理在线 → 21世纪教育网
+    volume: 老站，更新较慢
+    access_note: 静态 HTML（实测首页约 40 KB），列表与正文可抓
+  - id: S10
+    name: 希沃课件库
+    url: https://k.seewo.com（客户端同名入口）
+    kind: 课件 PPT
+    fee: 免费（希沃账号登录；课件库自述「免费获取」）
+    access: LX
+    content: 互动课件 .enbx，官方称覆盖 170+ 教材版本（含人教版），小学至高中
+    search: 站内搜「<节名> 物理 九年级」；客户端按「学科—版本—年级—章节」
+    how: 网页登录 → 搜节名 → 下载 .enbx；或希沃白板客户端 → 课件库 → 人教版 → 九年级 → 章节 → 下载；原件存 08-网络资源/优秀课件PPT/<章节>/；要改页的复制到 05-课件与文本/<章节>/
+    fallback: 教师之家 → 第一PPT
+    volume: 官方称 1000 万+ 教师使用；按教材章节点成套更新
+    access_note: （SPA）——服务端抓不到列表；DL——登录后网页下载，或在客户端「课件库」下载/一键存云课件
+  - id: S11
+    name: 第一PPT
+    url: https://www.1ppt.com
+    kind: 课件 PPT
+    fee: 主要免费，另有会员模板
+    access: L2
+    content: 中小学课件（正文以文字形式铺在页面）、通用模板
+    search: <节名> 课件 site:1ppt.com
+    how: 搜索 → 详情页 → 抓正文成 .md；下载页点附件直链；下不了的记入《人工取件清单》
+    fallback: 希沃白板课件库 → 教师之家
+    volume: 老站，更新较慢
+    access_note: 详情页正文全文可抓（gb2312）；DL0——下载页给附件直链，页面无登录/积分字样（2026-10-13 实测，未点按钮）
+  - id: S12
+    name: 菁优网
+    url: https://www.jyeoo.com
+    kind: 试题 / 试卷 / 组卷
+    fee: 部分免费；免费账号有每日免费额度；年费/组卷导出要会员
+    access: L3
+    content: 按考点组卷、原题与解析、变式题
+    search: <节名> 考点 菁优网；<节名> 易错题
+    how: 搜索 → 题目页 → 登录看免费解析；只取免费额度，不充值
+    fallback: 组卷网 → 青夏教育
+    volume: 自述 3000 万＋道试题，日增 4000＋道
+    access_note: 页面登录墙；DL——登录后有免费题与解析片段（额度以站内为准），组卷导出要会员
+  - id: S13
+    name: 组卷网
+    url: https://zujuan.xkw.com
+    kind: 试题 / 试卷 / 组卷
+    fee: 部分免费/付费
+    access: LX
+    content: 快速组卷、变式训练题、成套试卷
+    search: <节名> 组卷；<节名> 单元卷
+    how: 浏览器人工组卷导出；技能记入《人工取件清单》
+    fallback: 菁优网 → 青夏教育
+    volume: 与学科网题库同步，日更
+    access_note: SPA；社区用油猴脚本导出
+  - id: S14
+    name: 青夏教育
+    url: http://www.1010jiajiao.com
+    kind: 试题 / 试卷 / 组卷
+    fee: 免费
+    access: L1
+    content: 教辅答案、同步练习答案页
+    search: <书名> 答案；<节名> 同步练习 答案
+    how: 搜索书名/节名 → 答案页 → 抓成 .md；用于核对《金学典·同步优学》
+    fallback: 菁优网（解析）
+    volume: 老站，更新较慢
+    access_note: /L2——页面可访问，答案页正文可抓
+  - id: S15
+    name: 哔哩哔哩
+    url: https://www.bilibili.com
+    kind: 微课视频 / 实验演示
+    fee: 免费
+    access: L2
+    content: 优质课、实验演示、动画素材
+    search: <节名> 优质课；<节名> 实验演示
+    how: 搜索 → 挑播放量/评论好的 → 记链接；需要视频时用本地 yt-dlp/you-get 下载到 05-课件与文本/<章节>/课件素材/
+    fallback: 国家平台精品课（人工导出）→ 湖南智慧教育平台
+    volume: 更新快，按话题聚合
+    access_note: 搜索页与视频简介可抓；视频本体需下载工具
+  - id: S16
+    name: 知网板书
+    url: https://www.cnki.net
+    kind: 板书设计
+    fee: 付费/机构
+    access: L3
+    content: 板书设计理念与研究、板书案例文章
+    search: 初中物理 板书设计；物理 板书 结构化
+    how: 站内检索 → 抓摘要与可读页成 .md，存 08-网络资源/板书设计参考/md文件/
+    fallback: 万方 → 百度学术索引
+    volume: 长期收录，稳定
+    access_note: 标题、作者、摘要可抓；全文要机构或付费
+  - id: S17
+    name: 知网
+    url: https://www.cnki.net
+    kind: 教学研究文献
+    fee: 付费/机构（校园网或文献传递）
+    access: L3
+    content: 过渡语、问题链、板书、前概念等教学研究论文
+    search: 初中物理 + <主题>；<节名> 教学设计 研究
+    how: 站内检索 → 摘要/可读页抓成 .md，存 08-网络资源/教学研究文献/md文件/
+    fallback: 万方 → 维普 → 百度学术
+    volume: 长期收录，稳定
+    access_note: 标题/作者/摘要可抓，全文要机构或付费
+  - id: S18
+    name: 组卷网工具
+    url: https://zujuan.xkw.com
+    kind: 工具站
+    fee: 部分免费/付费
+    access: LX
+    content: 按考点快速组卷、变式训练、成套试卷
+    search: <节名> 组卷；<节名> 单元卷
+    how: 浏览器人工组卷导出 PDF/Word；技能记入《人工取件清单》
+    fallback: 菁优网 → 青夏教育
+    volume: 与学科网题库同步，日更
+    access_note: SPA；社区用油猴脚本导出
+  - id: S19
+    name: 湖南智慧教育平台
+    url: https://www.hnedu.cn
+    kind: 电子教材 / 课标
+    fee: 免费（湖南教师账号）
+    access: LX
+    content: 省级优课、课件、教学设计
+    search: ""
+    how: 登录 sso.hnedu.cn → 资源 → 学科—年级—章节
+    fallback: 国家中小学智慧教育平台
+    volume: ""
+    access_note: ""
+  - id: S20
+    name: 湖南少年儿童出版社
+    url: http://hnjcph.com
+    kind: 电子教材 / 课标
+    fee: 免费查阅
+    access: L1
+    content: 只查版次 / ISBN，不提供资源下载
+    search: ""
+    how: 直接检索书名
+    fallback: 青夏教育（答案页）
+    volume: ""
+    access_note: ""
+  - id: S21
+    name: 百度文库
+    url: https://wenku.baidu.com
+    kind: 导学案 / 学案
+    fee: 付费 / 下载券
+    access: LX
+    content: 教案、学案（付费墙）
+    search: ""
+    how: 不作为兜底，遇付费墙立即换源
+    fallback: 21世纪教育网
+    volume: ""
+    access_note: ""
+  - id: S22
+    name: 优品PPT
+    url: https://www.ypppt.com
+    kind: 课件 PPT
+    fee: 免费
+    access: DL0
+    content: 通用 PPT 模板；学科课件较少
+    search: ""
+    how: 静态站直接下
+    fallback: 第一PPT
+    volume: ""
+    access_note: ""
+  - id: S23
+    name: 正确云题库 / 橡皮网
+    url: https://www.xiangpi.com
+    kind: 试题 / 试卷 / 组卷
+    fee: 免费账号
+    access: L2
+    content: 同步练习与解析片段
+    search: 节名 + 知识点
+    how: 搜索 → 题目页 → 复制题干与解析
+    fallback: 学科网免费池
+    volume: ""
+    access_note: ""
+  - id: S24
+    name: 无忧考网
+    url: https://www.51test.net/zhongkao/wuli/
+    kind: 试题 / 试卷 / 组卷
+    fee: 免费、免登录
+    access: DL0
+    content: 中考物理试题文本（网页）
+    search: ""
+    how: 直接抓网页文本
+    fallback: 学科网免费池
+    volume: ""
+    access_note: ""
+  - id: S25
+    name: 维普期刊
+    url: https://qikan.cqvip.com
+    kind: 教学研究文献
+    fee: 机构 / 付费
+    access: L3
+    content: 期刊论文题录与摘要
+    search: 初中物理 教学策略
+    how: 题录可抓，全文要机构账号
+    fallback: 中国知网
+    volume: ""
+    access_note: ""
+  - id: S26
+    name: 万方数据
+    url: https://www.wanfangdata.com.cn
+    kind: 教学研究文献
+    fee: 机构 / 付费
+    access: L3
+    content: 学位论文、期刊题录
+    search: 初中物理 教学设计
+    how: 题录可抓，全文要机构账号
+    fallback: 中国知网
+    volume: ""
+    access_note: ""
+  - id: S27
+    name: 百度学术
+    url: https://xueshu.baidu.com
+    kind: 教学研究文献
+    fee: 免费
+    access: L2
+    content: 论文题录、被引与摘要
+    search: 初中物理 电压 教学
+    how: 题录与摘要可直接抓
+    fallback: 万方数据
+    volume: ""
+    access_note: ""
+  - id: S28
+    name: PDF24
+    url: https://www.pdf24.org
+    kind: 工具站
+    fee: 免费
+    access: DL0
+    content: 格式转换（docx/pdf/图片）
+    search: ""
+    how: 网页直接操作
+    fallback: 本机 ffmpeg
+    volume: ""
+    access_note: ""
+  - id: S29
+    name: iLovePDF
+    url: https://www.ilovepdf.com
+    kind: 工具站
+    fee: 免费额度
+    access: DL0
+    content: PDF 合并、拆分、转换
+    search: ""
+    how: 网页直接操作
+    fallback: PDF24
+    volume: ""
+    access_note: ""
+  - id: S30
+    name: 白描（OCR）
+    url: https://baimiao.uzero.cn
+    kind: 工具站
+    fee: 免费额度
+    access: DL0
+    content: 图片 / 扫描件 OCR
+    search: ""
+    how: 上传图片 → 复制文字
+    fallback: 本机 tesseract
+    volume: ""
+    access_note: ""

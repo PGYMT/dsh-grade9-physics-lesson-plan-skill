@@ -28,19 +28,26 @@ import os
 import re
 import sys
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+SKILL_DIR = os.path.dirname(HERE)
+sys.path.insert(0, HERE)
+import simple_yaml  # noqa: E402
+
+DATA = os.path.join(SKILL_DIR, 'references', 'data')
+_SOURCES = simple_yaml.load(os.path.join(DATA, 'sources.yaml'))
+_RUBRIC = simple_yaml.load(os.path.join(DATA, 'rubric.yaml'))
+
 DIMENSIONS = ['板书设计', '重点突破', '难点突破', '易错纠正', '过渡语', '讲授思路', '讲授顺序']
-COUNT_TYPES = ['教案', '课件', '练习', '导学案', '板书参考']
-LOWER = {'教案': 3, '课件': 3, '练习': 3, '导学案': 2, '板书参考': 2}
-UPPER = {'教案': 5, '课件': 5, '练习': 5, '导学案': None, '板书参考': None}
+COUNT_TYPES = [k for k in _SOURCES['targets'].keys() if k != '视频']
+LOWER = {k: (_SOURCES['targets'][k] or [None, None])[0] for k in COUNT_TYPES}
+UPPER = {k: (_SOURCES['targets'][k] or [None, None])[1] for k in COUNT_TYPES}
 RES_EXT = ('.md', '.docx', '.pdf', '.pptx', '.ppt', '.doc', '.txt')
 EXCLUDE = ('调研记录', '调研摘要', '人工取件清单', '检索记录', '抓取记录')
 URL_RE = re.compile(r'https?://[^\s)）>」]+')
 DATE_RE = re.compile(r'20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]')
 DATE_ANY_RE = re.compile(r'20[0-9]{2}-?[0-9]{2}-?[0-9]{2}')
-FLOOR = {'教案': 400, '课件': 400, '练习': 400, '导学案': 400, '板书参考': 100}
-BODY_MARKERS = ('教学目标', '学习目标', '教学过程', '教学重点', '教学难点', '重难点',
-                '板书', '导学', '预习', '答案', '解析', '例题', '练习', '探究',
-                '实验', '借鉴', '采用', '设计意图')
+FLOOR = _RUBRIC['mechanical']['floor']
+BODY_MARKERS = tuple(_RUBRIC['mechanical']['markers'])
 GRADES = ('甲', '乙', '丙', '—')
 EFFECTIVE = ('甲', '乙')
 MANUAL_LIST = '人工取件清单'

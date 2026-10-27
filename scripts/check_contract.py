@@ -19,7 +19,7 @@
 
 契约字段（六组，完整定义见 schemas/lesson.schema.json、最小样例见 schemas/example.lesson.json）：
   身份  id 章-课时  chapter 章名  section 节号  title 节名  textbook 教材版本
-        duration_min 分钟  experiment_mode 仅多媒体/教师演示实验  version_tag 文件名版本段  draft 真假
+        duration_min 分钟  experiment_mode 仅多媒体/教师演示实验/不涉及实验  version_tag 文件名版本段  draft 真假
   目标  objectives[{dimension 四维之一, text 单句}]
   流程  segments[{name 环节名, minutes 分钟, kind 导入/新授/练习/小结/作业/讲评}]
   板书  boards{count 1—2, max_lines ≤8, max_chars ≤14}
@@ -37,7 +37,7 @@ import sys
 REQUIRED = ['id', 'chapter', 'section', 'title', 'textbook', 'duration_min',
             'experiment_mode', 'version_tag', 'draft', 'objectives', 'segments',
             'boards', 'student_sheets', 'deck_pages', 'sources']
-MODES = ['仅多媒体', '教师演示实验']
+MODES = ['仅多媒体', '教师演示实验', '不涉及实验']
 DIMS = ['物理观念', '科学思维', '科学探究', '科学态度与责任']
 KINDS = ['导入', '新授', '练习', '小结', '作业', '讲评']
 TYPES = ['教案', '课件', '练习', '导学案', '板书', '视频', '文献', '其他']
@@ -197,7 +197,7 @@ def main():
         epilog='''字段词表：
   必填 15 键：id chapter section title textbook duration_min experiment_mode
              version_tag draft objectives segments boards student_sheets deck_pages sources
-  experiment_mode：仅多媒体 / 教师演示实验
+  experiment_mode：仅多媒体 / 教师演示实验 / 不涉及实验（练习课等）
   objectives.dimension：物理观念 / 科学思维 / 科学探究 / 科学态度与责任
   segments.kind：导入 / 新授 / 练习 / 小结 / 作业 / 讲评
   sources.type：教案 / 课件 / 练习 / 导学案 / 板书 / 视频 / 文献 / 其他

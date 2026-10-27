@@ -191,6 +191,59 @@ def table_targets(ws):
     return out
 
 
+
+READ_BUDGET = 45 * 1024
+# 开读＝技能一启动就要读完的三份；01/02 是写正文、交稿时才按节查的工具书，不计开读。
+READ_PATH = ['SKILL.md', 'references/00-入口路由.md', 'references/08-备课调研.md']
+# 工具书单份上限，防止它们悄悄变胖。
+FILE_CAP = {'references/01-教案生成要求.md': 21 * 1024,
+            'references/02-教学设计细则.md': 21 * 1024}
+TOC_MARK = '**目录**：'
+
+
+def headings(rel):
+    """返回正文里二级标题（不含围栏代码块内的行），按出现顺序。"""
+    out, fence = [], False
+    for ln in rd(rel).split('\n'):
+        if ln.strip().startswith(FENCE):
+            fence = not fence
+            continue
+        if not fence and ln.startswith('## '):
+            text = ln[3:].strip()
+            if text != '目录':
+                out.append(text)
+    return out
+
+
+def toc_entries(rel):
+    """解析顶部目录，返回标题列表；支持一行式与「## 目录 + 列表」两种写法。没有返回 None。"""
+    lines = rd(rel).split('\n')[:20]
+    for ln in lines:
+        if ln.startswith(TOC_MARK):
+            return [m.group(1) for m in re.finditer(r'\[([^\]]+)\]\(#[^)]*\)', ln)]
+    in_toc = False
+    out = []
+    for ln in lines:
+        s = ln.strip()
+        if s == '## 目录':
+            in_toc = True
+            continue
+        if in_toc:
+            if not s:
+                continue
+            m = re.match(r'^- \[([^\]]+)\]\(#[^)]*\)$', s)
+            if m:
+                out.append(m.group(1))
+                continue
+            break
+    return out or None
+
+
+def read_bytes(rel):
+    p = os.path.join(SKILL_DIR, rel)
+    return os.path.getsize(p) if os.path.isfile(p) else -1
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--workspace', default=DEFAULT_WS)
@@ -279,8 +332,11 @@ def main():
     listed = table_targets(ws)
     live = {os.path.basename(k): os.path.join(ws, k) for k in scripts}
     live.update({s: os.path.join(SKILL_DIR, 'scripts', s) for s in own})
-    for s in ['check_structure.py', 'check_deps.py', 'check_research.py', 'check_lesson.py']:
-        live[s] = os.path.join(SKILL_DIR, 'scripts', s)
+    # 技能内脚本自动发现：scripts/*.py 全算（dist、tests、vendor 子目录不算）
+    sdir = os.path.join(SKILL_DIR, 'scripts')
+    for n in sorted(os.listdir(sdir)):
+        if n.endswith('.py') and os.path.isfile(os.path.join(sdir, n)):
+            live[n] = os.path.join(sdir, n)
     rt = os.path.join(SKILL_DIR, 'scripts', 'tests', 'run_tests.py')
     if os.path.isfile(rt):
         live['run_tests.py'] = rt
@@ -288,6 +344,33 @@ def main():
     check('脚本表每行都指向真实文件', not ghost, '; '.join(ghost))
     unlisted = sorted(n for n in live if n not in listed)
     check('每个实际脚本都在脚本表里', not unlisted, '; '.join(unlisted))
+
+    print('== 9. 顶部目录与正文标题一一对应 ==')
+    for rel in ['references/01-教案生成要求.md', 'references/02-教学设计细则.md',
+                'references/04-技能维护规范.md', 'references/06-课件修改与排版.md']:
+        toc = toc_entries(rel)
+        if toc is None:
+            check('有顶部目录 ' + os.path.basename(rel), False, '缺「**目录**：」行')
+            continue
+        hs = headings(rel)
+        check('目录与标题一致 ' + os.path.basename(rel), toc == hs,
+              '目录 %d 条 / 标题 %d 条' % (len(toc), len(hs)))
+
+    print('== 10. 开读字数上限（开读三份 <= 45KB，01/02 各 <= 21KB）==')
+    total = 0
+    detail = []
+    for rel in READ_PATH:
+        n = read_bytes(rel)
+        if n < 0:
+            check('开读文件存在 ' + rel, False, '缺失')
+            continue
+        total += n
+        detail.append('%s=%dB' % (os.path.basename(rel), n))
+    check('开读路径合计 <= 45KB', 0 < total <= READ_BUDGET, '; '.join(detail) + ' 合计=%dB' % total)
+    for rel, cap in sorted(FILE_CAP.items()):
+        n = read_bytes(rel)
+        check('单份上限 %dKB %s' % (cap // 1024, os.path.basename(rel)), 0 < n <= cap,
+              '当前 %dB' % n)
 
     bad = [n for n, ok, _ in RESULTS if not ok]
     print('')

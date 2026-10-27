@@ -1,0 +1,55 @@
+base: base-01
+title: "15.2 电流和电路 新授课（仅多媒体）"
+checks:
+  - id: M1
+    kind: machine
+    name: 课程安排表十项全过（L1）
+    how: contract
+    expect: pass
+  - id: M2
+    kind: machine
+    name: 正文与安排表一致五项（L2）
+    how: consistency
+    expect: pass
+  - id: M3
+    kind: machine
+    name: 板书 2 块且行数字数在限
+    how: boards
+    expect: pass
+  - id: M4
+    kind: machine
+    name: 内嵌板书图与板数一致
+    how: docx_media
+    expect: pass
+  - id: M5
+    kind: machine
+    name: 参考资料覆盖甲乙级来源
+    how: sources
+    expect: pass
+  - id: M6
+    kind: machine
+    name: 环节用时合计＝40 分钟
+    how: minutes
+    expect: pass
+  - id: M7
+    kind: machine
+    name: 逐字稿体量（md＋docx 且正文 ≥4000 字）
+    how: files
+    expect: pass
+  - id: M8
+    kind: machine
+    name: 成品检查九项（L3）
+    how: lesson
+    expect: known
+  - id: P1
+    kind: model
+    name: 提问三检：先问思路再问结果
+  - id: P2
+    kind: model
+    name: 过渡三连：三处环节衔接都有过渡语
+  - id: P3
+    kind: model
+    name: 术语时机：先出现再解释，不提前堆
+  - id: P4
+    kind: model
+    name: 学生预设：关键提问都写了学生回答

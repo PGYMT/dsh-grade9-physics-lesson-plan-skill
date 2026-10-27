@@ -1,0 +1,47 @@
+base: base-03
+title: "17.1 电流与电压、电阻的关系 练习课"
+checks:
+  - id: M1
+    kind: machine
+    name: 课程安排表十项全过（L1）
+    how: contract
+    expect: pass
+  - id: M2
+    kind: machine
+    name: 正文与安排表一致五项（L2）
+    how: consistency
+    expect: pass
+  - id: M3
+    kind: machine
+    name: 板书 2 块且行数字数在限
+    how: boards
+    expect: pass
+  - id: M4
+    kind: machine
+    name: 内嵌板书图与板数一致
+    how: docx_media
+    expect: pass
+  - id: M5
+    kind: machine
+    name: 参考资料覆盖甲乙级来源
+    how: sources
+    expect: pass
+  - id: M6
+    kind: machine
+    name: 练习课结构：有当堂检测与分层
+    how: practice
+    expect: pass
+  - id: M7
+    kind: machine
+    name: 逐字稿体量（md＋docx 且正文 ≥4000 字）
+    how: files
+    expect: pass
+  - id: P1
+    kind: model
+    name: 分层题梯度：基础／提能／链中考齐全
+  - id: P2
+    kind: model
+    name: 错因归类：按错在哪一步分组
+  - id: P3
+    kind: model
+    name: 订正动作：学生写错因不只抄答案

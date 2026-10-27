@@ -1,0 +1,83 @@
+{
+  "id": "16.1-1课时",
+  "chapter": "第十六章 电压 电阻",
+  "section": "16.1",
+  "title": "电压",
+  "textbook": "人教版（2024）九年级物理全一册",
+  "duration_min": 40,
+  "experiment_mode": "教师演示实验",
+  "version_tag": "1课时-教师演示实验-详案",
+  "draft": true,
+  "objectives": [
+    {
+      "dimension": "物理观念",
+      "text": "知道电压是使电路中形成持续电流的原因，单位是伏特（V），会读电压表示数"
+    },
+    {
+      "dimension": "科学思维",
+      "text": "用抽水机保持水压类比理解电压，能把水位差、水压、水流对应到电压、电流"
+    },
+    {
+      "dimension": "科学探究",
+      "text": "能按说明书正确连接电压表，测出小灯泡两端电压与电源电压并如实记录"
+    },
+    {
+      "dimension": "科学态度与责任",
+      "text": "读数前先看量程与分度值，连接有误先断开开关再检查，养成安全用电习惯"
+    }
+  ],
+  "segments": [
+    {
+      "name": "情境导入",
+      "minutes": 5,
+      "kind": "导入"
+    },
+    {
+      "name": "电压与电压表",
+      "minutes": 20,
+      "kind": "新授"
+    },
+    {
+      "name": "当堂练习",
+      "minutes": 10,
+      "kind": "练习"
+    },
+    {
+      "name": "课堂小结",
+      "minutes": 5,
+      "kind": "小结"
+    }
+  ],
+  "boards": {
+    "count": 1,
+    "max_lines": 8,
+    "max_chars": 14
+  },
+  "student_sheets": [],
+  "deck_pages": [
+    "课件截图 01—06（16.1 电压 电压表使用）"
+  ],
+  "sources": [
+    {
+      "url": "https://zy.21cnjy.com/23627681",
+      "fetched_date": "2026-10-11",
+      "type": "教案",
+      "level": "甲",
+      "sha256_16": "974dfa784088e001"
+    },
+    {
+      "url": "https://zy.21cnjy.com/24113776",
+      "fetched_date": "2026-10-11",
+      "type": "课件",
+      "level": "乙",
+      "sha256_16": "20b46217f69de918"
+    },
+    {
+      "url": "https://zy.21cnjy.com/24047985",
+      "fetched_date": "2026-10-11",
+      "type": "练习",
+      "level": "甲",
+      "sha256_16": "0e46f88228a34f43"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+base: base-02
+title: "16.1 电压 演示实验课"
+checks:
+  - id: M1
+    kind: machine
+    name: 课程安排表十项全过（L1）
+    how: contract
+    expect: pass
+  - id: M2
+    kind: machine
+    name: 正文与安排表一致五项（L2）
+    how: consistency
+    expect: pass
+  - id: M3
+    kind: machine
+    name: 板书 1 块且行数字数在限
+    how: boards
+    expect: pass
+  - id: M4
+    kind: machine
+    name: 内嵌板书图与板数一致
+    how: docx_media
+    expect: pass
+  - id: M5
+    kind: machine
+    name: 参考资料覆盖甲乙级来源
+    how: sources
+    expect: pass
+  - id: M6
+    kind: machine
+    name: 逐字稿体量（md＋docx 且正文 ≥4000 字）
+    how: files
+    expect: known
+  - id: M7
+    kind: machine
+    name: 成品检查九项（L3）
+    how: lesson
+    expect: pass
+  - id: P1
+    kind: model
+    name: 先预测后结论：演示前让学生猜
+  - id: P2
+    kind: model
+    name: 替代方案：现象不明显时怎么补
+  - id: P3
+    kind: model
+    name: 安全提醒：量程与接线在动手前讲

@@ -1,0 +1,116 @@
+{
+  "id": "15.2-第1课时",
+  "chapter": "第十五章 电流和电路",
+  "section": "15.2",
+  "title": "电流和电路",
+  "textbook": "人教版（2024）九年级物理全一册",
+  "duration_min": 40,
+  "experiment_mode": "仅多媒体",
+  "version_tag": "第1课时-仅多媒体-详案",
+  "draft": false,
+  "objectives": [
+    {
+      "dimension": "物理观念",
+      "text": "知道电流由电荷的定向移动形成，方向按正电荷定向移动的方向规定"
+    },
+    {
+      "dimension": "科学思维",
+      "text": "由去掉电池、剪断导线的现象推理持续电流的条件，并抽象出回路模型"
+    },
+    {
+      "dimension": "科学探究",
+      "text": "针对通电前后自由电子的不同提出问题，观察动画获取证据并作出解释"
+    },
+    {
+      "dimension": "科学态度与责任",
+      "text": "结合短路引发火灾的事例增强安全用电意识，坚持不把导线直接接在电池两端"
+    }
+  ],
+  "segments": [
+    {
+      "name": "情境导入",
+      "minutes": 2,
+      "kind": "导入"
+    },
+    {
+      "name": "任务一 电流",
+      "minutes": 13,
+      "kind": "新授"
+    },
+    {
+      "name": "任务二 导体和绝缘体",
+      "minutes": 8,
+      "kind": "新授"
+    },
+    {
+      "name": "任务三 电路的构成",
+      "minutes": 9,
+      "kind": "新授"
+    },
+    {
+      "name": "课堂小结与当堂练习",
+      "minutes": 8,
+      "kind": "练习"
+    }
+  ],
+  "boards": {
+    "count": 2,
+    "max_lines": 8,
+    "max_chars": 14
+  },
+  "student_sheets": [],
+  "deck_pages": [
+    "第1—17页"
+  ],
+  "sources": [
+    {
+      "url": "https://www.51jiaoxi.com/doc-16193317.html",
+      "fetched_date": "2026-09-28",
+      "type": "教案",
+      "level": "甲",
+      "sha256_16": "0562b0a0d664f0c4"
+    },
+    {
+      "url": "https://zy.21cnjy.com/23597345",
+      "fetched_date": "2026-09-28",
+      "type": "教案",
+      "level": "甲",
+      "sha256_16": "13f686aac2f727ca"
+    },
+    {
+      "url": "https://www.51jiaoxi.com/doc-18369728.html",
+      "fetched_date": "2026-09-28",
+      "type": "教案",
+      "level": "乙",
+      "sha256_16": "f27742927193f2dc"
+    },
+    {
+      "url": "https://zy.21cnjy.com/26191090",
+      "fetched_date": "2026-09-28",
+      "type": "课件",
+      "level": "乙",
+      "sha256_16": "2c6314e7538f1dd5"
+    },
+    {
+      "url": "https://mip.21cnjy.com/P/26396785.html",
+      "fetched_date": "2026-09-28",
+      "type": "练习",
+      "level": "甲",
+      "sha256_16": "cdc64562535b7a46"
+    },
+    {
+      "url": "https://mip.21cnjy.com/P/20247622.html",
+      "fetched_date": "2026-09-28",
+      "type": "导学案",
+      "level": "乙",
+      "sha256_16": "4a8c5e8a6fbc08e8"
+    },
+    {
+      "url": "https://mip.21cnjy.com/P/10253344.html",
+      "fetched_date": "2026-09-28",
+      "type": "课件",
+      "level": "丙",
+      "sha256_16": "586b9563f9b009fa"
+    }
+  ]
+}

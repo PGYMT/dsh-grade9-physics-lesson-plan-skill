@@ -57,9 +57,10 @@
     "experiment_mode": {
       "enum": [
         "仅多媒体",
-        "教师演示实验"
+        "教师演示实验",
+        "不涉及实验"
       ],
-      "description": "实验条件版本"
+      "description": "实验条件版本；练习课等不涉及实验的课时填「不涉及实验」"
     },
     "version_tag": {
       "type": "string",

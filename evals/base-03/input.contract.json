@@ -1,0 +1,93 @@
+{
+  "id": "17.1-练习课",
+  "chapter": "第十七章 欧姆定律",
+  "section": "17.1",
+  "title": "电流与电压、电阻的关系",
+  "textbook": "人教版（2024）九年级物理全一册",
+  "duration_min": 40,
+  "experiment_mode": "不涉及实验",
+  "version_tag": "练习课-详案",
+  "draft": false,
+  "objectives": [
+    {
+      "dimension": "物理观念",
+      "text": "能说出电流与电压、电阻关系的两条结论，并带出「电阻一定」「电压一定」的前提"
+    },
+    {
+      "dimension": "科学思维",
+      "text": "能给数据和图像选对判据（比值或乘积），判断结论成立与否并说出理由"
+    },
+    {
+      "dimension": "科学探究",
+      "text": "能按先查接线、再看示数、后判故障的顺序定位电路故障"
+    },
+    {
+      "dimension": "科学态度与责任",
+      "text": "订正按错因归类而不是抄答案，能说清自己错在哪一步"
+    }
+  ],
+  "segments": [
+    {
+      "name": "错因呈现",
+      "minutes": 4,
+      "kind": "导入"
+    },
+    {
+      "name": "错因一 图像与判据",
+      "minutes": 9,
+      "kind": "讲评"
+    },
+    {
+      "name": "错因二 故障判断",
+      "minutes": 8,
+      "kind": "讲评"
+    },
+    {
+      "name": "错因三 控制电压与滑片方向",
+      "minutes": 10,
+      "kind": "讲评"
+    },
+    {
+      "name": "当堂检测",
+      "minutes": 5,
+      "kind": "练习"
+    },
+    {
+      "name": "订正与分层任务",
+      "minutes": 4,
+      "kind": "作业"
+    }
+  ],
+  "boards": {
+    "count": 2,
+    "max_lines": 8,
+    "max_chars": 14
+  },
+  "student_sheets": [],
+  "deck_pages": [
+    "第19—23页"
+  ],
+  "sources": [
+    {
+      "url": "https://zxkeben.szxuexiao.com/html/12666.html",
+      "fetched_date": "2026-10-25",
+      "type": "练习",
+      "level": "甲",
+      "sha256_16": "c11c3e3d64aeb4fa"
+    },
+    {
+      "url": "https://zy.21cnjy.com/17374135",
+      "fetched_date": "2026-10-25",
+      "type": "教案",
+      "level": "甲",
+      "sha256_16": "d6a8bdc21080cee7"
+    },
+    {
+      "url": "https://m.1ppt.com/kejian/129140.html",
+      "fetched_date": "2026-10-25",
+      "type": "课件",
+      "level": "乙",
+      "sha256_16": "1b910c8bedd5b99f"
+    }
+  ]
+}

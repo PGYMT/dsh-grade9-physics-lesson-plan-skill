@@ -4,6 +4,7 @@
 
 用法：
   python3 scripts/check_consistency.py --contract 课时契约.json --md 详案.md
+  python3 scripts/check_consistency.py --contract 课时契约.json --md 详案.md --fix
 
 5 项（每项带连续「第N项」；一次报全，不报一处修一处）：
   1. 环节标题数：md 里「### 环节…」的条数＝契约 segments 条数；
@@ -13,7 +14,13 @@
      md「九、参考资料」一节（只覆盖契约里最高两级，丙级不强制）；
   5. 文件名与 id 匹配：md 文件名＝section＋title＋"-"＋version_tag。
 
-硬规则：以契约为准改 md，不允许改契约迁就 md。本脚本只读两边、不做任何写入。
+硬规则：以契约为准改 md，不允许改契约迁就 md。
+
+默认只读两边、不写入。加 --fix 时只做两类确定性修复：
+  · 把 md 各环节标题里的（约N分钟）改成契约 minutes；
+  · 文件名不符合 section+title+"-"+version_tag 时改名（目标已存在则不动，列为待判断）。
+修不了的（环节条数不符、板书块数不符、来源缺链接）一律列为「还需你判断」，不猜。
+输出固定两行：已自动修复 N 处 / 还需你判断 M 处。
 
 退出码：0＝5 项全过；1＝有失败项。
 """
@@ -38,6 +45,53 @@ def item(name, ok, detail=''):
     RESULTS.append((name, ok))
     print('  [%s] 第%d项 %s%s' % ('PASS' if ok else 'FAIL', NO[0], name,
                                  ('  ' + detail) if detail else ''))
+
+
+def apply_fixes(md_path, md, d, heads, segs):
+    """确定性修复：环节用时对齐契约、文件名对齐契约。返回 (修了几处, 新md, 新路径)。"""
+    fixed = 0
+    lines = md.split('\n')
+    start = 0
+    for i, s in enumerate(segs):
+        if i >= len(heads):
+            break
+        want = s.get('minutes')
+        if want is None:
+            continue
+        # 找到第 i 个「### 环节」行，把其中的（约N分钟）换成契约值
+        for j in range(start, len(lines)):
+            if HEAD_RE.match(lines[j] + '\n') or lines[j].startswith('### 环节'):
+                m = MINUTES_RE.search(lines[j])
+                if m and int(m.group(1)) != int(want):
+                    lines[j] = (lines[j][:m.start()] + '约%d分钟' % int(want)
+                                + lines[j][m.end():])
+                    fixed += 1
+                    print('  [修复] 环节「%s」用时改为 %s 分钟' % (s.get('name', ''), want))
+                elif not m:
+                    print('  [待判断] 环节「%s」标题里没写用时，没有可替换的位置' % s.get('name', ''))
+                start = j + 1
+                break
+    out = '\n'.join(lines)
+    if out != md:
+        with open(md_path, 'w', encoding='utf-8') as f:
+            f.write(out)
+        md = out
+
+    sec = str(d.get('section', ''))
+    title = str(d.get('title', ''))
+    tag = str(d.get('version_tag', ''))
+    want_name = sec + title + '-' + tag
+    base = re.sub(r'\.(md|docx)$', '', os.path.basename(md_path))
+    if want_name and base != want_name:
+        new_path = os.path.join(os.path.dirname(os.path.abspath(md_path)), want_name + '.md')
+        if os.path.exists(new_path):
+            print('  [待判断] 想改名为 %s，但同名文件已存在，没敢覆盖' % os.path.basename(new_path))
+        else:
+            os.replace(md_path, new_path)
+            fixed += 1
+            print('  [修复] 文件改名为 %s' % os.path.basename(new_path))
+            md_path = new_path
+    return fixed, md, md_path
 
 
 def brief(s, limit=80):
@@ -72,6 +126,8 @@ def main():
 ''')
     ap.add_argument('--contract', required=True, help='课时契约 JSON 路径')
     ap.add_argument('--md', required=True, help='详案 md 路径')
+    ap.add_argument('--fix', action='store_true',
+                    help='只修确定性项（环节用时、文件名），其余列为待判断')
     ns = ap.parse_args()
 
     try:
@@ -91,6 +147,11 @@ def main():
 
     segs = [s for s in d.get('segments', []) if isinstance(s, dict)]
     heads, refs = md_sections(md)
+
+    fixed = 0
+    if ns.fix:
+        fixed, md, ns.md = apply_fixes(ns.md, md, d, heads, segs)
+        heads, refs = md_sections(md)  # 修完重新取标题与参考资料，按修后的内容判
 
     print('== %s × %s ==' % (os.path.basename(ns.contract), os.path.basename(ns.md)))
 
@@ -142,6 +203,8 @@ def main():
 
     failed = [n for n, ok in RESULTS if not ok]
     print('\n结果：%d 项，失败 %d 项' % (len(RESULTS), len(failed)))
+    if ns.fix:
+        print('已自动修复 %d 处 / 还需你判断 %d 处' % (fixed, len(failed)))
     if failed:
         print('以契约为准改 md，不允许改契约迁就 md。')
     return 1 if failed else 0
