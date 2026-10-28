@@ -7,6 +7,7 @@
   from build_board_png import render_boards; render_boards(md, out_dir) -> [{path,width,height}]
 
 依赖 Pillow：优先系统 Pillow；没有就把同目录 vendor/ 下的 pillow-*.whl 解压到 vendor/_libs 再用。
+布局：左板｜课件屏（2 倍板宽）｜右板（1:2:1）；行首每两级空格右移 24 px；板头只画「左板／右板」。
 字体：优先 /mnt/c/Windows/Fonts/simkai.ttf（正文）与 simhei.ttf（标题）；找不到退回 DejaVu。
 """
 from __future__ import annotations
@@ -123,7 +124,7 @@ def parse_block(block):
             if cur is None:
                 cur = {"head": "", "lines": []}
                 panels.append(cur)
-            cur["lines"].append(s.strip())
+            cur["lines"].append(s)
     return {"title": "   ".join(title), "panels": panels}
 
 
@@ -177,11 +178,42 @@ def _draw_line(d, x, y, line, font):
     return x
 
 
+def line_indent(line):
+    """行首空格 ÷ 2：两级空格算一级缩进，渲染时右移 24 px。"""
+    return (len(line) - len(line.lstrip(" "))) // 2
+
+
+def head_label(head):
+    """板标题给老师看的名字：板1→左板、板2→右板；括号里的（主板）（副板）不画。"""
+    s = re.sub(r"[（(][^）)]*[）)]", "", head).strip()
+    if s in ("板1", "板 1"):
+        return "左板"
+    if s in ("板2", "板 2"):
+        return "右板"
+    return s
+
+
+def _dashed_rect(d, x0, y0, x1, y1, color, dash=10, space=8, width=2):
+    """虚线空框：只有一块板时，右槽留位给人看。"""
+    x0, y0, x1, y1 = int(x0), int(y0), int(x1), int(y1)
+    x = x0
+    while x < x1:
+        d.line((x, y0, min(x + dash, x1), y0), fill=color, width=width)
+        d.line((x, y1, min(x + dash, x1), y1), fill=color, width=width)
+        x += dash + space
+    y = y0
+    while y < y1:
+        d.line((x0, y, x0, min(y + dash, y1)), fill=color, width=width)
+        d.line((x1, y, x1, min(y + dash, y1)), fill=color, width=width)
+        y += dash + space
+
+
 def render_block(Image, ImageDraw, ImageFont, blk, out_path):
     title = blk["title"]
     panels = blk["panels"]
     ft = _font(ImageFont, HEI, 30)
     fh = _font(ImageFont, HEI, 26)
+    fh18 = _font(ImageFont, HEI, 18)
     fb = _font(ImageFont, KAI, 25)
     body_lh = 44
     head_h = 52
@@ -189,18 +221,28 @@ def render_block(Image, ImageDraw, ImageFont, blk, out_path):
     gap = 24
     margin = 28
     metric = ImageDraw.Draw(Image.new("RGB", (10, 10)))
-    pw = 380
+    IND = 24                      # 每级缩进右移的像素
+    SCREEN_FILL = (231, 234, 236)
+    SCREEN_LINE = (176, 182, 188)
+    SCREEN_TEXT = (128, 134, 140)
+    DASH = (198, 202, 196)
+
+    def _panel_w(p):
+        w = 0
+        for ln in p["lines"]:
+            w = max(w, _line_width(metric, ln.strip(), fb) + line_indent(ln) * IND)
+        return w
+
+    pw = 340
     for p in panels:
-        wmax = max([_line_width(metric, ln, fb) for ln in p["lines"]] or [0])
-        pw = max(pw, wmax + pad * 2)
-    pw = int(pw)
+        pw = max(pw, int(_panel_w(p) + pad * 2))
     title_w = metric.textlength(title, font=ft) if title else 0
-    cols = max(1, len(panels))
-    if cols > 2:
-        cols = 2
-    rows = (len(panels) + cols - 1) // cols
+    left_x = margin
+    screen_x0 = margin + pw + gap
+    right_x = screen_x0 + 2 * pw + gap
+    W = int(max(right_x + pw + margin, title_w + margin * 2 + 40, 900))
+    rows = (len(panels) + 1) // 2
     ph = max([head_h + len(p["lines"]) * body_lh + pad for p in panels] or [200])
-    W = int(max(margin * 2 + cols * pw + (cols - 1) * gap, title_w + margin * 2 + 40, 900))
     top = margin + (58 if title else 0)
     H = int(top + rows * ph + (rows - 1) * gap + margin)
     img = Image.new("RGB", (W, H), (255, 255, 255))
@@ -208,18 +250,25 @@ def render_block(Image, ImageDraw, ImageFont, blk, out_path):
     if title:
         d.rounded_rectangle((margin, margin, W - margin, margin + 50), radius=8, fill=BG)
         d.text((margin + 24, margin + 9), title, font=ft, fill=(255, 255, 245))
+    # 中间是课件屏：2 倍板宽，浅灰，不写字
+    d.rounded_rectangle((screen_x0, top, right_x - gap, top + ph), radius=10,
+                        fill=SCREEN_FILL, outline=SCREEN_LINE, width=2)
+    label = "课件屏（不写字）"
+    lw = metric.textlength(label, font=fh)
+    d.text((screen_x0 + (2 * pw - lw) / 2, top + ph / 2 - 18), label, font=fh, fill=SCREEN_TEXT)
     for i, p in enumerate(panels):
-        r = i // cols
-        c = i % cols
-        x = margin + c * (pw + gap)
+        r = i // 2
+        x = right_x if i % 2 else left_x
         y = top + r * (ph + gap)
         d.rounded_rectangle((x, y, x + pw, y + ph), radius=8, fill=BG, outline=(150, 150, 140), width=2)
-        d.text((x + 22, y + 12), p["head"], font=fh, fill=YELLOW)
+        d.text((x + 22, y + 14), head_label(p["head"]), font=fh18, fill=(176, 184, 176))
         d.line((x + 20, y + head_h - 4, x + pw - 20, y + head_h - 4), fill=(115, 125, 115), width=1)
         yy = y + head_h + 6
         for ln in p["lines"]:
-            _draw_line(d, x + 22, yy, ln, fb)
+            _draw_line(d, x + 22 + line_indent(ln) * IND, yy, ln.strip(), fb)
             yy += body_lh
+    if len(panels) == 1:
+        _dashed_rect(d, right_x, top, right_x + pw, top + ph, DASH)
     img.save(out_path)
     return {"path": out_path, "width": img.size[0], "height": img.size[1]}
 

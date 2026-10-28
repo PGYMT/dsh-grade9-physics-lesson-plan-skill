@@ -10,6 +10,7 @@ check_research 用 8 份故意违规摘要（覆盖失败项 1-5、7、8）＋2 
 check_lesson 用 9 份故意违规 md/docx（覆盖失败项 1-9）＋2 份合格样本；
 check_contract 用 1 份合格契约＋2 份违规契约（删环节、课时超范围）；
 check_consistency 用 1 份合格契约＋md 配对＋2 份违规配对（用时差 1 分钟、漏甲级来源）。
+build_board_png 用 5 条断言（缩进保真／板头去括号／1:2:1 布局／单块虚线／缩进动像素）。
 docx 样本用技能内 scripts/build_docx.py 现场生成再拆改，不手搓 OOXML。
 退出码：0=全部符合预期；1=有样本未被判失败或正样本被误判。
 """
@@ -534,6 +535,97 @@ def consistency_tests(root):
     expect('负样本：参考资料漏掉甲级来源', 1,
            [sys.executable, CHECK_CONSISTENCY, '--contract', cp, '--md', q3], must_fail=4)
 
+def _ok(tag, cond, detail=''):
+    """进程内断言：与 expect() 同样的 [OK ]/[BAD] 口径。"""
+    if not cond:
+        FAILS.append(tag)
+    print('[%s] %s%s' % ('OK ' if cond else 'BAD', tag, detail))
+    return cond
+
+
+def render_tests(root):
+    print('===== build_board_png.py 渲染 =====')
+    sys.path.insert(0, os.path.join(SKILL_DIR, 'scripts'))
+    try:
+        import hashlib
+        import build_board_png as bb
+        Image, _, _ = bb._pillow()
+    except Exception as e:
+        print('[SKIP] 渲染测试：%s' % e)
+        return
+    d = os.path.join(root, 'render')
+    os.makedirs(d, exist_ok=True)
+    SCREEN = (231, 234, 236)
+    DASH = (198, 202, 196)
+    F = BT * 3
+
+    def render(name, text):
+        out = os.path.join(d, name)
+        shutil.rmtree(out, ignore_errors=True)
+        p = os.path.join(d, name + '.md')
+        open(p, 'w', encoding='utf-8').write(text)
+        r = bb.render_boards(p, out)
+        return r[0]['path'] if r else ''
+
+    # ① 缩进保真
+    lines = ['## 左板', '一、电阻', '    判据：导体本身的性质']
+    blk = bb.parse_block(lines)
+    _ok('渲染① 缩进保真：行首空格不被吃掉（4 空格＝2 级）',
+        blk['panels'][0]['lines'] == lines[1:] and bb.line_indent(lines[2]) == 2)
+
+    # ② 板头去括号
+    _ok('渲染② 板头去括号：板1（主板）→左板、板2（副板）→右板',
+        bb.head_label('板1（主板）') == '左板' and bb.head_label('板2（副板）') == '右板'
+        and bb.head_label('左板') == '左板' and bb.head_label('右板') == '右板')
+
+    body = '一、电阻' + NL + '    判据：导体本身的性质' + NL
+    two = F + 'board' + NL + '# 板书' + NL + '## 左板' + NL + body + '## 右板' + NL + '三、导电性' + NL + F + NL
+    p2 = render('two', two)
+    img = Image.open(p2).convert('RGB')
+
+    def row_runs(im, y):
+        runs, cur, start = [], None, 0
+        for x in range(im.width):
+            px = im.getpixel((x, y))
+            if px != cur:
+                if cur is not None:
+                    runs.append((cur, start, x - 1))
+                cur, start = px, x
+        runs.append((cur, start, im.width - 1))
+        return runs
+
+    # ③ 布局 1:2:1（板头灰字会把底色断成几段，取第一条完整行）
+    ok3 = False
+    for y in range(100, img.height - 10):
+        rs = row_runs(img, y)
+        screen = [r for r in rs if r[0] == SCREEN]
+        boards = [r for r in rs if r[0] == bb.BG]
+        if not screen or len(boards) < 2:
+            continue
+        sw = screen[0][2] - screen[0][1] + 1
+        bw = boards[0][2] - boards[0][1] + 1
+        if bw < 100:
+            continue
+        ok3 = abs(sw - 2 * bw) <= 4 and img.width >= 1200
+        break
+    _ok('渲染③ 布局 1:2:1：屏幕宽＝板宽×2，总宽 ≥1200 px', ok3, '  总宽=%d' % img.width)
+
+    # ④ 单块：右槽虚线空框，总宽不变
+    one = F + 'board' + NL + '# 板书' + NL + '## 左板' + NL + body + F + NL
+    img1 = Image.open(render('one', one)).convert('RGB')
+    cmap = dict((c, n) for n, c in img1.crop((img1.width // 2, 90, img1.width, img1.height)).getcolors(1 << 24))
+    _ok('渲染④ 单块：右槽画虚线空框，总宽与双块相同',
+        img1.width == img.width and cmap.get(DASH, 0) > 20 and cmap.get(bb.BG, 0) == 0,
+        '  宽=%d/%d' % (img1.width, img.width))
+
+    # ⑤ 缩进真的动像素
+    pa = render('ind0', F + 'board' + NL + '## 左板' + NL + '判据：导体本身的性质' + NL + F + NL)
+    pb = render('ind1', F + 'board' + NL + '## 左板' + NL + '  判据：导体本身的性质' + NL + F + NL)
+    ha = hashlib.sha256(open(pa, 'rb').read()).hexdigest()
+    hb = hashlib.sha256(open(pb, 'rb').read()).hexdigest()
+    _ok('渲染⑤ 缩进真的动像素：同一行加 2 空格，哈希不同', ha != hb)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--workspace', default=os.environ.get('JIAOAN_WORKSPACE', '/root/dsh-workspace/工作文件'))
@@ -544,6 +636,7 @@ def main():
         lesson_tests(root, a.workspace)
         contract_tests(root)
         consistency_tests(root)
+        render_tests(root)
     finally:
         shutil.rmtree(root, ignore_errors=True)
     print('')
