@@ -1,13 +1,13 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 9.0.1
+version: 9.1.0
 license: CC-BY-4.0
 description: Use when asked to generate or revise a Grade 9 physics lesson plan (九年级物理教案) from a Seewo .enbx, per the saved 教案生成要求, or to add pages to an .enbx (改课件/加页). Defaults to 40 min/period; outputs only the 详案/逐字稿 (Markdown + Word) for new and practice lessons. Research-first via the 教学资源取件手册, routes by entry (references/00-入口路由.md), runs check_contract.py + check_consistency.py + check_research.py + check_lesson.py before delivery; can add native-text pages (click-to-reveal answers) to an .enbx copy, original untouched. Not for 'how do I use this skill'.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v9.0.1
+> 版本：v9.1.0
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 > 先读 references/00-入口路由.md：判入口、走主干、看失败分支都在那儿。
 
@@ -87,7 +87,7 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 2. docx 用真 OOXML 生成：标题层级可导航，旁批 `〔…〕` 与正文样式可分，`〔板书｜…〕` 用红色样式（伪 docx 在 Word 里导航打不开，老师改稿也认不出哪句是旁批）。
 3. 教学目标按核心素养四维度分写、学生视角、可测可评：先写一行“单元定位”；科学思维落在模型建构/科学推理/科学论证/质疑创新里至少两类，科学探究落在提出问题/获取证据/作出解释/交流评估里至少两类（只写维度名会流成口号，落到具体要素才好在课上使）；单句精简、条件与标准不删（含条件或标准的句子 ≤40 字）；四维度后附“评价证据”至少 1 条；课标条目写在“一、教材分析”。
 4. 重难点、易混、板书动作、用时**就地**写在教学过程对应位置（老师照读到那一段就知道在哪停、往板上写什么）；“四、教学重难点”只写重点 1 条＋难点 ≤2 条。
-5. 板书写成成品：md 用 ```board 围栏，1—2 块（至少 1 块）、每块 ≤8 行、每行 ≤14 字；填空用下划线留空、不用 □；板上不出现安全符号；docx 里插入渲染好的板书图。
+5. 板书写成成品：md 用 ```board 围栏，左板＝主干（全课不擦）、右板＝演算与错例（可空），共 1—2 块、每块 ≤8 行、每行 ≤14 字（`## 左板`／`## 右板`，旧的 `## 板1（主板）` 照样认）；填空用下划线留空、不用 □；板上不出现安全符号；docx 里插入渲染好的板书图。
 6. 过渡只为真实逻辑关系服务：导入/过渡/首问避免三连重复（连问三句同一件事，学生会走神）；弱联系只报下一步。
 7. 学生用件（导学案/记录表等）在“五、教学准备”写清名称、栏目、印发方式（课上临时翻不到，课前就要抓瞎）。
 8. 备查/过程内容（调研流水、课件补白汇总、板书时机汇总）留在调研与素材文件里，不进教案、不单独成节（教案是上课用的，不是备课日志）。

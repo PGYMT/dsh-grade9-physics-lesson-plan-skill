@@ -6,12 +6,12 @@
   python3 scripts/check_lesson.py --docx 详案.docx --md 详案.md [--skill SKILL.md]
 
 失败项（影响退出码；每项在输出里带连续「第N项」，供自检回报引用）：
-  1. board 块数 1—2（## 板N 与 board 围栏数双测）；
-  2. 每块实际书写行 ≤8（块＝「## 板N」；围栏内没有板N 时整个围栏算一块）；
+  1. board 块数 1—2（## 板N／左板／右板 与 board 围栏数双测）；
+  2. 每块实际书写行 ≤8（块＝「## 板N」或「## 左板／右板」；围栏内没有板标题时整个围栏算一块）；
   3. docx 内嵌 board-*.png 数＝md board 块数，且至少 1 张；
   4. 本次未向 04-教案/<章节>/板书图/ 新增板书图；
   5. docx 末尾生成信息块存在，版本串＝SKILL.md frontmatter（读不到 SKILL 时跳过）；
-  6. 〔板书｜…〕 段落为红色样式，docx 用数不少于 md 真实旁批数；多出只提示；
+  6. 〔板书｜…〕 段落为红色样式，docx 用数不少于 md 真实旁批数；多出只提示；序号写成占位符 x（板1·x）判失败；
   7. 文件名符合现行命名规则。
   8. 各环节用时之和＝课时分钟（读「课时：…N分钟」；读不到按默认 40 分钟并提示）；
   9. md 未晚于同名 docx（md 改了忘了重生成；-旧版 归档不查）。
@@ -35,7 +35,7 @@ BOARD_RE = re.compile(r'^[ ]*' + re.escape(FENCE) + r'board[ ]*$')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import checks  # noqa: E402  三级判定：item 阻断 / warn 提示 / advisory 遗留
 
-HEAD_RE = re.compile(r'^##\s*板([0-9]+)', re.M)
+HEAD_RE = re.compile(r'^##\s*(?:板[0-9]+|左板|右板)', re.M)
 WEN_RE = re.compile(r'[0-9]+\.[0-9]+.+-((第[0-9]+课时)|(1课时))-[^\-]+-详案(-旧版)?\.(md|docx)$')
 PRAC_RE = re.compile(r'[0-9]+\.[0-9]+.+-练习课-详案(-旧版)?\.(md|docx)$')
 VER_RE = re.compile(r'^version:\s*([0-9][^\s]*)\s*$', re.M)
@@ -114,16 +114,24 @@ def actual_chars(s):
 
 
 def board_notes(md):
+    """返回 (真实旁批数, 未替换的序号占位符列表)。
+
+    旁批序号只认「板N·序号」；序号写成占位符 x（如 板1·x）＝没填，判失败。
+    「>」开头的标注约定行整行跳过（历史稿里写过 板N·x 的说明）。
+    """
     n = 0
+    placeholders = []
     for ln in md.splitlines():
         s = ln.strip()
         if not s or s.startswith('>'):
             continue
         for body in re.findall(r'〔板书｜([^〕]*)〕', s):
-            if re.match(r'^板[0-9N]+·x', body.strip()):
+            body = body.strip()
+            if body.endswith('·x'):
+                placeholders.append(body)
                 continue
             n += 1
-    return n
+    return n, placeholders
 
 
 def find_chapter_dir(md_path):
@@ -257,6 +265,9 @@ def main():
     units = [u for b in blocks for u in board_units(b)]
     worst = max([len(u) for u in units], default=0)
     item('每块实际书写行 <=8', worst <= 8, '最多 %d 行／共 %d 块' % (worst, len(units)))
+    blank = heads - len(units)
+    if blank > 0:
+        warn('右板留空', '有 %d 块只写了标题、没写内容；右板留空是允许的，确认是有意为之' % blank)
 
     print('== 内嵌板书图 / 未单独落盘 ==')
     names, doc, styles, media = docx_parts(docx_path)
@@ -296,7 +307,7 @@ def main():
                             md_path, 'docx 里的版本串不含 v%s，属旧版生成的成品' % ver)
 
     print('== 板书旁批 ==')
-    note_n = board_notes(md)
+    note_n, placeholders = board_notes(md)
     if not blocks:
         skip('板书旁批红色', '该 md 无 board 块')
     else:
@@ -304,8 +315,10 @@ def main():
         used = len(re.findall(r'w:pStyle w:val="BoardMark"', doc))
         if used > note_n:
             warn('docx 板书旁批多于 md', 'docx %d 次／md 真实旁批 %d 处' % (used, note_n))
-        item('板书旁批红色（至少一处）', red and used >= 1,
-             note + ('，docx 用 %d 次（md 真实旁批 %d 处）' % (used, note_n)))
+        detail6 = note + ('，docx 用 %d 次（md 真实旁批 %d 处）' % (used, note_n))
+        if placeholders:
+            detail6 += '；序号还是占位符：%s' % '／'.join(placeholders[:3])
+        item('板书旁批红色（至少一处）', red and used >= 1 and not placeholders, detail6)
         if red and used >= 1 and used < note_n:
             checks.advisory('check_lesson', '板书旁批少于 md 标注',
                             md_path, 'docx %d 次／md %d 处' % (used, note_n))

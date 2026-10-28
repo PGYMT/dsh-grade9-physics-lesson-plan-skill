@@ -52,7 +52,7 @@ NAMES = {
 SRC = {'教案': '官方', '课件': '精品', '练习': '官方', '导学案': '官方', '板书参考': '精品'}
 
 
-def expect(tag, want, cmd, must_fail=None, must_warn=None):
+def expect(tag, want, cmd, must_fail=None, must_warn=None, must_contain=None):
     p = subprocess.run(cmd, capture_output=True, text=True)
     got = 0 if p.returncode == 0 else 1
     ok = got == want
@@ -67,6 +67,10 @@ def expect(tag, want, cmd, must_fail=None, must_warn=None):
         if needle not in p.stdout:
             ok = False
             extra = '（未看到 %s）' % needle
+    if ok and must_contain is not None:
+        if must_contain not in p.stdout:
+            ok = False
+            extra = '（未看到 %r）' % must_contain
     mark = 'OK ' if ok else 'BAD'
     if not ok:
         FAILS.append(tag)
@@ -246,7 +250,7 @@ def base_md(boards=1, rows=4, note=True, boards_per_fence=1, last_rows=None):
         L.append('# 16.9 测试节')
         for k in range(b, min(b + boards_per_fence, boards)):
             r_n = last_rows if (last_rows is not None and k == boards - 1) else rows
-            L.append('## 板%d（主板）' % (k + 1))
+            L.append('## ' + ('左板' if k == 0 else '右板' if k == 1 else '板%d' % (k + 1)))
             L.append('一、测试知识块')
             for r in range(r_n - 1):
                 L.append('行%d：内容' % (r + 1))
@@ -290,12 +294,12 @@ def lesson_tests(root, ws):
         print(p.stdout[-500:], p.stderr[-500:])
         return
 
-    def run(tag, want, m, d, must_fail=None):
+    def run(tag, want, m, d, must_fail=None, must_contain=None):
         if os.path.isfile(m) and os.path.isfile(d):
             t0 = os.path.getmtime(d) - 60
             os.utime(m, (t0, t0))
         expect(tag, want, [sys.executable, CHECK_LESSON, '--md', m, '--docx', d, '--skill', SKILL_MD],
-               must_fail=must_fail)
+               must_fail=must_fail, must_contain=must_contain)
 
     run('正样本（应 PASS）', 0, md, docx)
 
@@ -304,7 +308,7 @@ def lesson_tests(root, ws):
     run('负样本：无 board 围栏', 1, m0, docx, must_fail=1)
 
     m0h = os.path.join(mdd, name + '.md')
-    open(m0h, 'w', encoding='utf-8').write(base_md().replace('## 板1（主板）', '## 板书（主板）'))
+    open(m0h, 'w', encoding='utf-8').write(base_md().replace('## 左板', '## 板书'))
     run('负样本：围栏内无 ##板N', 1, m0h, docx, must_fail=1)
 
     m8b = os.path.join(mdd, name + '.md')
@@ -381,6 +385,29 @@ def lesson_tests(root, ws):
     expect('负样本：md 比 docx 新（忘记重生成）', 1,
            [sys.executable, CHECK_LESSON, '--md', m9, '--docx', docx, '--skill', SKILL_MD])
 
+    # ---- P0 新增：左板／右板、旧写法兼容、空板提示、序号占位符 ----
+    m10 = os.path.join(mdd, name + '.md')
+    open(m10, 'w', encoding='utf-8').write(base_md(boards=1, rows=5))
+    run('正样本：单块「## 左板」5 行', 0, m10, docx)
+
+    m11 = os.path.join(mdd, name + '.md')
+    open(m11, 'w', encoding='utf-8').write(base_md(boards=1, rows=5).replace('行4：内容', '## 右板'))
+    run('正样本：右板留空（应给提示、不扣分）', 0, m11, docx, must_contain='右板留空')
+
+    m12 = os.path.join(mdd, name + '.md')
+    open(m12, 'w', encoding='utf-8').write(
+        base_md(boards=2, boards_per_fence=2, rows=4)
+        .replace('## 左板', '## 板1（主板）').replace('## 右板', '## 板2（副板）'))
+    run('正样本：旧写法「## 板1（主板）／## 板2（副板）」', 0, m12, docx)
+
+    m13 = os.path.join(mdd, name + '.md')
+    open(m13, 'w', encoding='utf-8').write(base_md(boards=1, rows=4).replace('## 左板', '## 板书'))
+    run('负样本：标题不是板（## 板书）', 1, m13, docx, must_fail=1)
+
+    m14 = os.path.join(mdd, name + '.md')
+    open(m14, 'w', encoding='utf-8').write(base_md().replace('〔板书｜板1·1〕', '〔板书｜板1·x〕'))
+    run('负样本：旁批序号还是占位符（板1·x）', 1, m14, docx, must_fail=6)
+
 
 CHECK_CONTRACT = os.path.join(SKILL_DIR, 'scripts', 'check_contract.py')
 CHECK_CONSISTENCY = os.path.join(SKILL_DIR, 'scripts', 'check_consistency.py')
@@ -404,7 +431,7 @@ def make_pair(d):
             {'name': '当堂练习', 'minutes': 15, 'kind': '练习'},
             {'name': '课堂小结', 'minutes': 5, 'kind': '小结'},
         ],
-        'boards': {'count': 1, 'max_lines': 8, 'max_chars': 14},
+        'boards': {'count': 1, 'max_lines': 8, 'max_chars': 14, 'type': '提纲'},
         'student_sheets': [], 'deck_pages': ['第1—9页'],
         'sources': [
             {'url': 'https://a.example/1', 'fetched_date': '2026-10-01', 'type': '教案',
@@ -465,6 +492,25 @@ def contract_tests(root):
     open(p3, 'w', encoding='utf-8').write(json.dumps(c3, ensure_ascii=False))
     expect('负样本：课时改成 10 分钟（超出 20—60）', 1,
            [sys.executable, CHECK_CONTRACT, p3], must_fail=3)
+
+    # ---- P0 新增：板书 type 三态（缺省／合法／乱写） ----
+    c5 = dict(c)
+    c5['boards'] = {'count': 1, 'max_lines': 8, 'max_chars': 14}
+    p5 = os.path.join(d, 'boards-type-absent.json')
+    open(p5, 'w', encoding='utf-8').write(json.dumps(c5, ensure_ascii=False))
+    expect('正样本：板书 type 缺省（按提纲式）', 0, [sys.executable, CHECK_CONTRACT, p5])
+
+    c6 = dict(c)
+    c6['boards'] = dict(c['boards'], type='表格')
+    p6 = os.path.join(d, 'boards-type-tabular.json')
+    open(p6, 'w', encoding='utf-8').write(json.dumps(c6, ensure_ascii=False))
+    expect('正样本：板书 type＝表格', 0, [sys.executable, CHECK_CONTRACT, p6])
+
+    c4 = dict(c)
+    c4['boards'] = dict(c['boards'], type='乱写')
+    p4 = os.path.join(d, 'boards-type-bad.json')
+    open(p4, 'w', encoding='utf-8').write(json.dumps(c4, ensure_ascii=False))
+    expect('负样本：板书 type 写错词', 1, [sys.executable, CHECK_CONTRACT, p4], must_fail=6)
 
 
 def consistency_tests(root):

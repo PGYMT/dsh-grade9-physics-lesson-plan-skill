@@ -11,7 +11,7 @@
   3. 课时长度 20—60 分钟；
   4. segments 的 minutes 之和＝duration_min；
   5. segments 3—12 条；
-  6. 板书上限：count 1—2、max_lines ≤8、max_chars ≤14；
+  6. 板书上限：count 1—2、max_lines ≤8、max_chars ≤14；type 可缺省，写了须是六种版式之一；
   7. sources 字段格式：url 是 http(s)、fetched_date 是年月日、sha256_16 是 16 位小写十六进制；
   8. objectives 四个维度每维至少 1 条，单条 ≤80 字；
   9. sources 至少 3 条，且教案／课件／练习各至少 1 条；
@@ -22,7 +22,7 @@
         duration_min 分钟  experiment_mode 仅多媒体/教师演示实验/不涉及实验  version_tag 文件名版本段  draft 真假
   目标  objectives[{dimension 四维之一, text 单句}]
   流程  segments[{name 环节名, minutes 分钟, kind 导入/新授/实验/练习/小结/作业/讲评}]
-  板书  boards{count 1—2, max_lines ≤8, max_chars ≤14}
+  板书  boards{count 1—2, max_lines ≤8, max_chars ≤14, type 提纲/表格/图解/流程/对比/综合，可缺省}
   材料  student_sheets[] 学生用件名（不印发写 []）、deck_pages[] 课件页码范围
   来源  sources[{url, fetched_date, type, level, sha256_16}]
 
@@ -41,6 +41,7 @@ MODES = ['仅多媒体', '教师演示实验', '不涉及实验']
 DIMS = ['物理观念', '科学思维', '科学探究', '科学态度与责任']
 KINDS = ['导入', '新授', '实验', '练习', '小结', '作业', '讲评']
 TYPES = ['教案', '课件', '练习', '导学案', '板书', '视频', '文献', '其他']
+BOARD_TYPES = ['提纲', '表格', '图解', '流程', '对比', '综合']
 LEVELS = ['甲', '乙', '丙']
 ID_RE = re.compile(r'^[0-9]+\.[0-9]+-(第[0-9]+课时|1课时|练习课)$')
 SEC_RE = re.compile(r'^[0-9]+\.[0-9]+$')
@@ -120,11 +121,13 @@ def check(d, name=None, strict=False):
     # 6 板书上限
     b = as_dict(d, 'boards')
     cnt, ml, mc = b.get('count'), b.get('max_lines'), b.get('max_chars')
+    btype = b.get('type')
     ok6 = (isinstance(cnt, int) and 1 <= cnt <= 2 and
            isinstance(ml, int) and 1 <= ml <= 8 and
-           isinstance(mc, int) and 1 <= mc <= 14)
-    item('板书上限', ok6, 'count=%s max_lines=%s max_chars=%s（上限 2／8／14）'
-         % (brief(cnt), brief(ml), brief(mc)))
+           isinstance(mc, int) and 1 <= mc <= 14 and
+           (btype is None or btype in BOARD_TYPES))
+    item('板书上限', ok6, 'count=%s max_lines=%s max_chars=%s type=%s（上限 2／8／14；type 可缺省）'
+         % (brief(cnt), brief(ml), brief(mc), brief(btype)))
 
     # 7 sources 字段格式
     bad7 = []
