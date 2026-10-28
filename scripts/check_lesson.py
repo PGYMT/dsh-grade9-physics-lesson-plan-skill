@@ -8,6 +8,7 @@
 失败项（影响退出码；每项在输出里带连续「第N项」，供自检回报引用）：
   1. board 块数 1—2（## 板N／左板／右板 与 board 围栏数双测）；
   2. 每块实际书写行 ≤8（块＝「## 板N」或「## 左板／右板」；围栏内没有板标题时整个围栏算一块）；
+     折算：图位「[图：说明]」算 3 行、整张表格算 1 行；顺带查表格与图位的格式（整表 ≤6 行、每列 ≤8 字、行首尾要有 |、图位要写说明）；
   3. docx 内嵌 board-*.png 数＝md board 块数，且至少 1 张；
   4. 本次未向 04-教案/<章节>/板书图/ 新增板书图；
   5. docx 末尾生成信息块存在，版本串＝SKILL.md frontmatter（读不到 SKILL 时跳过）；
@@ -16,7 +17,7 @@
   8. 各环节用时之和＝课时分钟（读「课时：…N分钟」；读不到按默认 40 分钟并提示）；
   9. md 未晚于同名 docx（md 改了忘了重生成；-旧版 归档不查）。
      --warn-only 时第 5、8、9 项降为提示，不影响退出码（复检历史旧稿用）。
-提示项（不影响退出码）：每行字数 ≤14、科学思维 ≥2 类、科学探究 ≥2 类、目标单句 ≤40 字、同一操作口径唯一（互斥说法同现）、两版该同部分一致（--pair）。
+提示项（不影响退出码）：每行字数 ≤14（表格行与图位不套此规则）、科学思维 ≥2 类、科学探究 ≥2 类、目标单句 ≤40 字、同一操作口径唯一（互斥说法同现）、两版该同部分一致（--pair）。
 视觉层：把内嵌板书图导出并打印路径，供模型 read_image 复核；--export-dir（或 JIAOAN_EXPORT_DIR）指定导出目录，缺省临时目录，指定目录不可写时自动退回临时目录。
 契约层：--contract 课程契约.json 时，末尾再跑 check_consistency.py 的 6 项（L2 一致层），结果并入本脚本退出码；不传时输出与旧版逐字节一致。
 退出码：0=全绿；1=有失败项。
@@ -107,6 +108,63 @@ def board_units(block):
 
 def board_rows(block):
     return [r for u in board_units(block) for r in u]
+
+
+IMG_RE = re.compile(r'^\[图[：:]\s*(.+?)\]$')
+CELL_MAX = 8
+TABLE_MAX = 6
+
+
+def table_problems(rows):
+    """表格格式：行首尾要有 |、整表 ≤6 行、列数一致、每列 ≤8 字。"""
+    out = []
+    good = []
+    for s in rows:
+        if len(s) > 1 and s.startswith('|') and s.endswith('|'):
+            good.append(s)
+        else:
+            out.append('表格行首尾要有 |：%s' % s)
+    if len(good) > TABLE_MAX:
+        out.append('整表 %d 行 > %d 行' % (len(good), TABLE_MAX))
+    counts = set(len(s.strip('|').split('|')) for s in good)
+    if len(counts) > 1:
+        out.append('表格各行列数不一致')
+    for s in good:
+        for c in s.strip('|').split('|'):
+            c = c.strip()
+            if not c:
+                out.append('表格里有空格子')
+                break
+            if len(c) > CELL_MAX:
+                out.append('单元格超过 %d 字：%s' % (CELL_MAX, c))
+                break
+    return out
+
+
+def board_unit_stats(lines):
+    """返回 (折算行数, 问题列表)：图位算 3 行、整张表格算 1 行、普通行算 1 行。"""
+    weight, errs, i, n = 0, [], 0, len(lines)
+    while i < n:
+        s = lines[i].strip()
+        if s.startswith('[图'):
+            m = IMG_RE.match(s)
+            if m and m.group(1).strip():
+                weight += 3
+            else:
+                errs.append('图位要写成 [图：说明]：%s' % s)
+            i += 1
+            continue
+        if '|' in s:
+            rows = []
+            while i < n and '|' in lines[i]:
+                rows.append(lines[i].strip())
+                i += 1
+            errs.extend(table_problems(rows))
+            weight += 1
+            continue
+        weight += 1
+        i += 1
+    return weight, errs
 
 
 def actual_chars(s):
@@ -263,8 +321,13 @@ def main():
 
     print('== 每块行数 ==')
     units = [u for b in blocks for u in board_units(b)]
-    worst = max([len(u) for u in units], default=0)
-    item('每块实际书写行 <=8', worst <= 8, '最多 %d 行／共 %d 块' % (worst, len(units)))
+    stats = [board_unit_stats(u) for u in units]
+    worst = max([w for w, _ in stats], default=0)
+    errs = [e for _, es in stats for e in es]
+    detail = '最多 %d 行／共 %d 块' % (worst, len(stats))
+    if errs:
+        detail += '；' + '；'.join(errs[:3])
+    item('每块实际书写行 <=8（图位算3行、整表算1行）', worst <= 8 and not errs, detail)
     blank = heads - len(units)
     if blank > 0:
         warn('右板留空', '有 %d 块只写了标题、没写内容；右板留空是允许的，确认是有意为之' % blank)
@@ -355,6 +418,8 @@ def main():
     over = []
     for b in blocks:
         for r in board_rows(b):
+            if r.startswith('|') or r.startswith('[图'):
+                continue
             if actual_chars(r) > 14:
                 over.append(r)
     warn('每行字数 <=14', '超标 %d 行' % len(over) if over else '', ok=not over)

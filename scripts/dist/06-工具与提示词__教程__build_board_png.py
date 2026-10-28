@@ -86,7 +86,7 @@ def _font(ImageFont, paths, size):
 
 
 FENCE_RE = re.compile("^[ ]*" + FENCE + "board[ ]*$")
-TOKEN = re.compile("[{]红[|]([^}]*)[}]|[{]圈[|]([^}]*)[}]|[{]下[|]([^}]*)[}]|[{]括号[|]([^}]*)[}]|(_{3,})")
+TOKEN = re.compile("[{]红[|]([^}]*)[}]|[{]圈[|]([^}]*)[}]|[{]下[|]([^}]*)[}]|[{]框[|]([^}]*)[}]|[{]括号[|]([^}]*)[}]|(_{3,})")
 
 
 def split_blocks(md):
@@ -141,7 +141,9 @@ def segs(line):
         elif m.group(3) is not None:
             out.append(("und", m.group(3)))
         elif m.group(4) is not None:
-            out.append(("t", m.group(4)))
+            out.append(("box", m.group(4)))
+        elif m.group(5) is not None:
+            out.append(("t", m.group(5)))
         else:
             out.append(("blank", ""))
         pos = m.end()
@@ -174,8 +176,84 @@ def _draw_line(d, x, y, line, font):
             d.line((x, y + fs + 4, x + w, y + fs + 4), fill=YELLOW, width=3)
         elif typ == "cir":
             d.ellipse((x - 7, y - 5, x + w + 7, y + fs + 7), outline=RED, width=3)
+        elif typ == "box":
+            d.rectangle((x - 8, y - 6, x + w + 8, y + fs + 6), outline=CHALK, width=2)
         x += w
     return x
+
+
+IMG_RE = re.compile(r"^\[图[：:]\s*(.+?)\]$")
+CELL_MAX = 8
+TABLE_MAX = 6
+TH = 40                        # 表格每行高
+
+
+def is_table_row(line):
+    s = line.strip()
+    return len(s) > 1 and s.startswith("|") and s.endswith("|")
+
+
+def table_cells(line):
+    return [c.strip() for c in line.strip().strip("|").split("|")]
+
+
+def col_widths(d, rows, font, pad=26):
+    n = max([len(r) for r in rows] or [1])
+    w = [0.0] * n
+    for r in rows:
+        for i, c in enumerate(r):
+            w[i] = max(w[i], d.textlength(c, font=font))
+    return [max(60, int(x) + pad) for x in w]
+
+
+def panel_flow(lines):
+    """把每块的内容折成渲染项：行／图位（3 行高）／表格（整表算一项）。"""
+    items = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        ln = lines[i]
+        m = IMG_RE.match(ln.strip())
+        if m:
+            items.append(("img", m.group(1).strip()))
+            i += 1
+            continue
+        if is_table_row(ln):
+            rows = []
+            while i < n and is_table_row(lines[i]):
+                rows.append(table_cells(lines[i]))
+                i += 1
+            items.append(("tab", rows))
+            continue
+        items.append(("line", ln))
+        i += 1
+    return items
+
+
+def _draw_img(d, x0, y0, x1, y1, text, font):
+    _dashed_rect(d, x0, y0, x1, y1, (198, 202, 196))
+    tw = d.textlength(text, font=font)
+    d.text((x0 + max(12, (x1 - x0 - tw) / 2), (y0 + y1) / 2 - 12), text, font=font,
+           fill=(150, 156, 150))
+
+
+def _draw_table(d, x, y, rows, font, line_color=(115, 125, 115)):
+    ws = col_widths(d, rows, font)
+    tw = sum(ws)
+    for r, cells in enumerate(rows):
+        cx = x
+        for i, c in enumerate(cells):
+            if i < len(ws):
+                d.text((cx + 12, y + r * TH + 8), c, font=font,
+                       fill=(246, 235, 150) if r == 0 else CHALK)
+                cx += ws[i]
+        d.line((x, y + (r + 1) * TH, x + tw, y + (r + 1) * TH), fill=line_color, width=2)
+    d.line((x, y, x, y + len(rows) * TH), fill=line_color, width=2)
+    cx = x
+    for w in ws[:-1]:
+        cx += w
+        d.line((cx, y, cx, y + len(rows) * TH), fill=line_color, width=2)
+    d.line((x + tw, y, x + tw, y + len(rows) * TH), fill=line_color, width=2)
 
 
 def line_indent(line):
@@ -227,11 +305,27 @@ def render_block(Image, ImageDraw, ImageFont, blk, out_path):
     SCREEN_TEXT = (128, 134, 140)
     DASH = (198, 202, 196)
 
+    for p in panels:
+        p["flow"] = panel_flow(p["lines"])
+
+    def _item_h(it):
+        kind, val = it
+        if kind == "img":
+            return 3 * body_lh
+        if kind == "tab":
+            return len(val) * TH + 10
+        return body_lh
+
+    def _item_w(it):
+        kind, val = it
+        if kind == "img":
+            return 260
+        if kind == "tab":
+            return sum(col_widths(metric, val, fb))
+        return _line_width(metric, val.strip(), fb) + line_indent(val) * IND
+
     def _panel_w(p):
-        w = 0
-        for ln in p["lines"]:
-            w = max(w, _line_width(metric, ln.strip(), fb) + line_indent(ln) * IND)
-        return w
+        return max([_item_w(it) for it in p["flow"]] or [0])
 
     pw = 340
     for p in panels:
@@ -242,7 +336,7 @@ def render_block(Image, ImageDraw, ImageFont, blk, out_path):
     right_x = screen_x0 + 2 * pw + gap
     W = int(max(right_x + pw + margin, title_w + margin * 2 + 40, 900))
     rows = (len(panels) + 1) // 2
-    ph = max([head_h + len(p["lines"]) * body_lh + pad for p in panels] or [200])
+    ph = max([head_h + sum(_item_h(it) for it in p["flow"]) + pad for p in panels] or [200])
     top = margin + (58 if title else 0)
     H = int(top + rows * ph + (rows - 1) * gap + margin)
     img = Image.new("RGB", (W, H), (255, 255, 255))
@@ -264,9 +358,16 @@ def render_block(Image, ImageDraw, ImageFont, blk, out_path):
         d.text((x + 22, y + 14), head_label(p["head"]), font=fh18, fill=(176, 184, 176))
         d.line((x + 20, y + head_h - 4, x + pw - 20, y + head_h - 4), fill=(115, 125, 115), width=1)
         yy = y + head_h + 6
-        for ln in p["lines"]:
-            _draw_line(d, x + 22 + line_indent(ln) * IND, yy, ln.strip(), fb)
-            yy += body_lh
+        for kind, val in p["flow"]:
+            if kind == "img":
+                _draw_img(d, x + 22, yy, x + pw - 22, yy + 3 * body_lh - 12, "图：" + val, fh18)
+                yy += 3 * body_lh
+            elif kind == "tab":
+                _draw_table(d, x + 22, yy, val, fb)
+                yy += len(val) * TH + 10
+            else:
+                _draw_line(d, x + 22 + line_indent(val) * IND, yy, val.strip(), fb)
+                yy += body_lh
     if len(panels) == 1:
         _dashed_rect(d, right_x, top, right_x + pw, top + ph, DASH)
     img.save(out_path)

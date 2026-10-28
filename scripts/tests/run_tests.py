@@ -7,10 +7,10 @@
 
 check_research 用 8 份故意违规摘要（覆盖失败项 1-5、7、8）＋2 份合格摘要
 （常规；某类全丙但已出《人工取件清单》）；
-check_lesson 用 9 份故意违规 md/docx（覆盖失败项 1-9）＋2 份合格样本；
+check_lesson 用 13 份故意违规 md/docx（覆盖失败项 1-9，含图位缺说明／表格 7 行／单元格 9 字／孤立 |）＋2 份合格样本；
 check_contract 用 1 份合格契约＋2 份违规契约（删环节、课时超范围）；
 check_consistency 用 1 份合格契约＋md 配对＋2 份违规配对（用时差 1 分钟、漏甲级来源）。
-build_board_png 用 5 条断言（缩进保真／板头去括号／1:2:1 布局／单块虚线／缩进动像素）。
+build_board_png 用 8 条断言（缩进保真／板头去括号／1:2:1 布局／单块虚线／缩进动像素／{框|…} 解析／图位算 3 行／表格能渲染）。
 docx 样本用技能内 scripts/build_docx.py 现场生成再拆改，不手搓 OOXML。
 退出码：0=全部符合预期；1=有样本未被判失败或正样本被误判。
 """
@@ -333,6 +333,15 @@ def lesson_tests(root, ws):
     open(m2c, 'w', encoding='utf-8').write(base_md(boards=2, boards_per_fence=2, rows=4, last_rows=9))
     run('负样本：一围栏两板其一>8行', 1, m2c, docx)
 
+    bad_cases = [('图位缺说明', '[图]'),
+                 ('表格 7 行', NL.join(['|甲|乙|'] * 7)),
+                 ('单元格 9 字', '|一二三四五六七八九|乙|'),
+                 ('孤立 | 不成对', '甲|乙')]
+    for tag, repl in bad_cases:
+        mb = os.path.join(mdd, name + '.md')
+        open(mb, 'w', encoding='utf-8').write(base_md().replace('行1：内容', repl, 1))
+        run('负样本：' + tag, 1, mb, docx, must_fail=2)
+
     m3 = os.path.join(mdd, name + '.md')
     open(m3, 'w', encoding='utf-8').write(base_md())
     variants = os.path.join(mdd, '变体docx')
@@ -624,6 +633,23 @@ def render_tests(root):
     ha = hashlib.sha256(open(pa, 'rb').read()).hexdigest()
     hb = hashlib.sha256(open(pb, 'rb').read()).hexdigest()
     _ok('渲染⑤ 缩进真的动像素：同一行加 2 空格，哈希不同', ha != hb)
+
+    # ⑥ {框|…}
+    _ok('渲染⑥ {框|…} 解析成 box 记号', bb.segs('{框|看下不看上}') == [('box', '看下不看上')])
+
+    # ⑦ 图位算 3 行（与 check_lesson 同一口径）
+    sys.path.insert(0, os.path.join(SKILL_DIR, 'scripts'))
+    import check_lesson as cl
+    _ok('渲染⑦ 图位 [图：…] 折算 3 行',
+        cl.board_unit_stats(['一、电阻', '[图：电路图]'])[0] == 4)
+
+    # ⑧ 表格两行能渲染，尺寸与普通行不同
+    tab = F + 'board' + NL + '## 左板' + NL + '|串联|并联|' + NL + '|电流相同|电压相等|' + NL + F + NL
+    plain = F + 'board' + NL + '## 左板' + NL + '串联、并联 电流相同 电压相等' + NL + F + NL
+    it = Image.open(render('tab', tab))
+    ip = Image.open(render('plain', plain))
+    _ok('渲染⑧ 表格两行能渲染，尺寸与普通行不同', it.size != ip.size,
+        '  表格=%s 普通=%s' % (it.size, ip.size))
 
 
 def main():
