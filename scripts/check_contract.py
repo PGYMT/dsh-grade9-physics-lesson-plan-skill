@@ -22,7 +22,8 @@
         duration_min 分钟  experiment_mode 仅多媒体/教师演示实验/不涉及实验  version_tag 文件名版本段  draft 真假
   目标  objectives[{dimension 四维之一, text 单句}]
   流程  segments[{name 环节名, minutes 分钟, kind 导入/新授/实验/练习/小结/作业/讲评}]
-  板书  boards{count 1—2, max_lines ≤8, max_chars ≤14, type 提纲/表格/图解/流程/对比/综合，可缺省}
+  板书  boards{count 1—2, max_lines ≤8, max_chars ≤14, type 提纲/表格/图解/流程/对比/综合，可缺省；
+        style_source 版式来源，填了就写非空字符串，可缺省}
   材料  student_sheets[] 学生用件名（不印发写 []）、deck_pages[] 课件页码范围
   来源  sources[{url, fetched_date, type, level, sha256_16}]
 
@@ -122,12 +123,15 @@ def check(d, name=None, strict=False):
     b = as_dict(d, 'boards')
     cnt, ml, mc = b.get('count'), b.get('max_lines'), b.get('max_chars')
     btype = b.get('type')
+    ssrc = b.get('style_source')
     ok6 = (isinstance(cnt, int) and 1 <= cnt <= 2 and
            isinstance(ml, int) and 1 <= ml <= 8 and
            isinstance(mc, int) and 1 <= mc <= 14 and
-           (btype is None or btype in BOARD_TYPES))
-    item('板书上限', ok6, 'count=%s max_lines=%s max_chars=%s type=%s（上限 2／8／14；type 可缺省）'
-         % (brief(cnt), brief(ml), brief(mc), brief(btype)))
+           (btype is None or btype in BOARD_TYPES) and
+           (ssrc is None or (isinstance(ssrc, str) and bool(ssrc.strip()))))
+    item('板书上限', ok6,
+         'count=%s max_lines=%s max_chars=%s type=%s style_source=%s（上限 2／8／14；type 与 style_source 可缺省，填了不能是空串）'
+         % (brief(cnt), brief(ml), brief(mc), brief(btype), brief(ssrc)))
 
     # 7 sources 字段格式
     bad7 = []

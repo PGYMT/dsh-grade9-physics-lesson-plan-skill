@@ -92,7 +92,7 @@ def board_units(block):
     units = []
     cur = None
     for ln in block:
-        s = ln.strip()
+        s = GEN_MARK_RE.sub('', ln.strip())
         if HEAD_RE.match(s):
             cur = []
             units.append(cur)
@@ -111,6 +111,7 @@ def board_rows(block):
 
 
 IMG_RE = re.compile(r'^\[图[：:]\s*(.+?)\]$')
+GEN_MARK_RE = re.compile(r'^[+\-]\s+')      # 行首时序标记：+ 课堂当场生成／- 课前预写
 CELL_MAX = 8
 TABLE_MAX = 6
 

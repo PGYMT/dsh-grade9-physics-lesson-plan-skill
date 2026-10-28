@@ -566,6 +566,16 @@ def _image_para(rid, docpid, cx, cy, name):
     return s
 
 
+BOARD_LEGEND = '板书版式：左板｜课件屏（不写字）｜右板；左侧淡黄虚线＝课堂当场生成，无标记＝课前预写'
+
+
+def _board_legend_para():
+    """板书图下面的一行小灰字图例：读图的人知道三条竖带各是什么。"""
+    return ('<w:p><w:pPr><w:spacing w:before="0" w:after="120"/><w:jc w:val="center"/></w:pPr>'
+            '<w:r><w:rPr><w:color w:val="808080"/><w:sz w:val="18"/></w:rPr>'
+            '<w:t xml:space="preserve">' + BOARD_LEGEND + '</w:t></w:r></w:p>')
+
+
 def _clone_style(block, sid, color, sz=None, shd='KEEP'):
     b = block.replace('<w:style w:type="paragraph" w:styleId="Note">',
                       '<w:style w:type="paragraph" w:styleId="' + sid + '">', 1)
@@ -701,7 +711,7 @@ def _patch_docx(out_path, imgs, ver, today):
         scale = min(1.0, CONTENT_EMU / float(px_w * EMU_PER_PX))
         cx = int(px_w * EMU_PER_PX * scale)
         cy = int(px_h * EMU_PER_PX * scale)
-        img_xml = _image_para(rid, 900 + i, cx, cy, name)
+        img_xml = _image_para(rid, 900 + i, cx, cy, name) + _board_legend_para()
         marker = '<w:p><w:pPr></w:pPr><w:r><w:t xml:space="preserve">@@BOARDIMG' + str(i + 1) + '@@</w:t></w:r></w:p>'
         if marker in doc:
             doc = doc.replace(marker, img_xml)

@@ -176,6 +176,11 @@
             "综合"
           ],
           "description": "本课板书版式；缺省按提纲式"
+        },
+        "style_source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "版式来源：借鉴哪份参考稿、取版式还是取图例；填了就要在 md 里写一行「> 版式来源：……」，不填不判"
         }
       }
     },

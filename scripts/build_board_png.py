@@ -8,6 +8,7 @@
 
 依赖 Pillow：优先系统 Pillow；没有就把同目录 vendor/ 下的 pillow-*.whl 解压到 vendor/_libs 再用。
 布局：左板｜课件屏（2 倍板宽）｜右板（1:2:1）；行首每两级空格右移 24 px；板头只画「左板／右板」。
+时序：板书行首「+ 」＝课堂当场生成（块内左侧画淡黄虚线竖条）；「- 」或不写＝课前预写。
 字体：优先 /mnt/c/Windows/Fonts/simkai.ttf（正文）与 simhei.ttf（标题）；找不到退回 DejaVu。
 """
 from __future__ import annotations
@@ -89,6 +90,20 @@ FENCE_RE = re.compile("^[ ]*" + FENCE + "board[ ]*$")
 TOKEN = re.compile("[{]红[|]([^}]*)[}]|[{]圈[|]([^}]*)[}]|[{]下[|]([^}]*)[}]|[{]框[|]([^}]*)[}]|[{]括号[|]([^}]*)[}]|(_{3,})")
 
 
+GEN_RE = re.compile(r"^(\s*)([+\-])\s+(.*)$")
+
+
+def split_gen(line):
+    """拆行首时序标记：返回 (正文, gen)。gen=True＝课堂当场生成（行首 + ），- 或不写＝课前预写。
+
+    缩进空格原样保留在正文前面，标记本身不进板面。
+    """
+    m = GEN_RE.match(line)
+    if m:
+        return m.group(1) + m.group(3), m.group(2) == "+"
+    return line, False
+
+
 def split_blocks(md):
     blocks = []
     cur = None
@@ -116,15 +131,17 @@ def parse_block(block):
         if not s.strip():
             continue
         if s.startswith("## "):
-            cur = {"head": s[3:].strip(), "lines": []}
+            cur = {"head": s[3:].strip(), "lines": [], "gen": []}
             panels.append(cur)
         elif s.startswith("# "):
             title.append(s[2:].strip())
         else:
             if cur is None:
-                cur = {"head": "", "lines": []}
+                cur = {"head": "", "lines": [], "gen": []}
                 panels.append(cur)
-            cur["lines"].append(s)
+            text, gen = split_gen(s)
+            cur["lines"].append(text)
+            cur["gen"].append(gen)
     return {"title": "   ".join(title), "panels": panels}
 
 
@@ -206,8 +223,11 @@ def col_widths(d, rows, font, pad=26):
     return [max(60, int(x) + pad) for x in w]
 
 
-def panel_flow(lines):
-    """把每块的内容折成渲染项：行／图位（3 行高）／表格（整表算一项）。"""
+def panel_flow(lines, gens=None):
+    """把每块的内容折成渲染项 (kind, 值, gen)：行／图位（3 行高）／表格（整表算一项）。"""
+    gens = list(gens or [])
+    if len(gens) < len(lines):
+        gens += [False] * (len(lines) - len(gens))
     items = []
     i = 0
     n = len(lines)
@@ -215,17 +235,18 @@ def panel_flow(lines):
         ln = lines[i]
         m = IMG_RE.match(ln.strip())
         if m:
-            items.append(("img", m.group(1).strip()))
+            items.append(("img", m.group(1).strip(), gens[i]))
             i += 1
             continue
         if is_table_row(ln):
-            rows = []
+            rows, g = [], False
             while i < n and is_table_row(lines[i]):
+                g = g or gens[i]
                 rows.append(table_cells(lines[i]))
                 i += 1
-            items.append(("tab", rows))
+            items.append(("tab", rows, g))
             continue
-        items.append(("line", ln))
+        items.append(("line", ln, gens[i]))
         i += 1
     return items
 
@@ -254,6 +275,14 @@ def _draw_table(d, x, y, rows, font, line_color=(115, 125, 115)):
         cx += w
         d.line((cx, y, cx, y + len(rows) * TH), fill=line_color, width=2)
     d.line((x + tw, y, x + tw, y + len(rows) * TH), fill=line_color, width=2)
+
+
+def _dashed_vline(d, x, y0, y1, color, dash=8, space=6, width=3):
+    """课堂当场生成的行：沿块内左侧画淡黄虚线竖条。"""
+    y = int(y0)
+    while y < y1:
+        d.line((x, y, x, min(y + dash, y1)), fill=color, width=width)
+        y += dash + space
 
 
 def line_indent(line):
@@ -304,12 +333,13 @@ def render_block(Image, ImageDraw, ImageFont, blk, out_path):
     SCREEN_LINE = (176, 182, 188)
     SCREEN_TEXT = (128, 134, 140)
     DASH = (198, 202, 196)
+    GEN_BAR = (214, 200, 130)     # 课堂当场生成的淡黄虚线
 
     for p in panels:
-        p["flow"] = panel_flow(p["lines"])
+        p["flow"] = panel_flow(p["lines"], p.get("gen"))
 
     def _item_h(it):
-        kind, val = it
+        kind, val = it[0], it[1]
         if kind == "img":
             return 3 * body_lh
         if kind == "tab":
@@ -317,7 +347,7 @@ def render_block(Image, ImageDraw, ImageFont, blk, out_path):
         return body_lh
 
     def _item_w(it):
-        kind, val = it
+        kind, val = it[0], it[1]
         if kind == "img":
             return 260
         if kind == "tab":
@@ -358,16 +388,18 @@ def render_block(Image, ImageDraw, ImageFont, blk, out_path):
         d.text((x + 22, y + 14), head_label(p["head"]), font=fh18, fill=(176, 184, 176))
         d.line((x + 20, y + head_h - 4, x + pw - 20, y + head_h - 4), fill=(115, 125, 115), width=1)
         yy = y + head_h + 6
-        for kind, val in p["flow"]:
+        for it in p["flow"]:
+            kind, val = it[0], it[1]
+            hh = _item_h(it)
+            if it[2]:
+                _dashed_vline(d, x + 9, yy - 6, yy + hh - 10, GEN_BAR)
             if kind == "img":
                 _draw_img(d, x + 22, yy, x + pw - 22, yy + 3 * body_lh - 12, "图：" + val, fh18)
-                yy += 3 * body_lh
             elif kind == "tab":
                 _draw_table(d, x + 22, yy, val, fb)
-                yy += len(val) * TH + 10
             else:
                 _draw_line(d, x + 22 + line_indent(val) * IND, yy, val.strip(), fb)
-                yy += body_lh
+            yy += hh
     if len(panels) == 1:
         _dashed_rect(d, right_x, top, right_x + pw, top + ph, DASH)
     img.save(out_path)

@@ -8,9 +8,9 @@
 check_research 用 8 份故意违规摘要（覆盖失败项 1-5、7、8）＋2 份合格摘要
 （常规；某类全丙但已出《人工取件清单》）；
 check_lesson 用 14 份故意违规 md/docx（覆盖失败项 1-9，含图位缺说明／表格 7 行／表格 6 行挤爆 8 行／单元格 9 字／孤立 |）＋2 份合格样本；
-check_contract 用 1 份合格契约＋2 份违规契约（删环节、课时超范围）；
-check_consistency 用 1 份合格契约＋md 配对＋2 份违规配对（用时差 1 分钟、漏甲级来源）。
-build_board_png 用 10 条断言（缩进保真／板头去括号／1:2:1 布局／单块虚线／缩进动像素／{框|…} 解析／图位算 3 行／表格能渲染／表格按自身行数计数／{框|…} 不被当成表格）。
+check_contract 用 1 份合格契约＋2 份违规契约（删环节、课时超范围）＋3 份板书 style_source 契约；
+check_consistency 用 1 份合格契约＋md 配对＋2 份违规配对（用时差 1 分钟、漏甲级来源）＋1 份版式来源配对（md 有／md 无）。
+build_board_png 用 12 条断言（缩进保真／板头去括号／1:2:1 布局／单块虚线／缩进动像素／{框|…} 解析／图位算 3 行／表格能渲染／表格按自身行数计数／{框|…} 不被当成表格／行首 + 打生成标记／带 + 的图与不带 + 的不同）。
 docx 样本用技能内 scripts/build_docx.py 现场生成再拆改，不手搓 OOXML。
 退出码：0=全部符合预期；1=有样本未被判失败或正样本被误判。
 """
@@ -523,13 +523,26 @@ def contract_tests(root):
     open(p4, 'w', encoding='utf-8').write(json.dumps(c4, ensure_ascii=False))
     expect('负样本：板书 type 写错词', 1, [sys.executable, CHECK_CONTRACT, p4], must_fail=6)
 
+    # ---- P3：版式来源 style_source（非空串过、空串失败） ----
+    c8 = dict(c)
+    c8['boards'] = dict(c['boards'], style_source='16.3 电阻样板稿，取版式')
+    p8 = os.path.join(d, 'boards-style-source.json')
+    open(p8, 'w', encoding='utf-8').write(json.dumps(c8, ensure_ascii=False))
+    expect('正样本：板书 style_source 写了非空串', 0, [sys.executable, CHECK_CONTRACT, p8])
+
+    c9 = dict(c)
+    c9['boards'] = dict(c['boards'], style_source='   ')
+    p9 = os.path.join(d, 'boards-style-source-blank.json')
+    open(p9, 'w', encoding='utf-8').write(json.dumps(c9, ensure_ascii=False))
+    expect('负样本：板书 style_source 只有空格', 1, [sys.executable, CHECK_CONTRACT, p9], must_fail=6)
+
 
 def consistency_tests(root):
     print('===== check_consistency.py =====')
     d = os.path.join(root, 'consistency')
     os.makedirs(d, exist_ok=True)
     cp, mp, c, md = make_pair(d)
-    expect('正样本：契约与 md 6 项全过', 0,
+    expect('正样本：契约与 md 7 项全过', 0,
            [sys.executable, CHECK_CONSISTENCY, '--contract', cp, '--md', mp])
     base = os.path.basename(mp)
     q2d = os.path.join(d, 'neg-minutes')
@@ -544,6 +557,21 @@ def consistency_tests(root):
     open(q3, 'w', encoding='utf-8').write(md.replace('1. https://a.example/1' + NL, '', 1))
     expect('负样本：参考资料漏掉甲级来源', 1,
            [sys.executable, CHECK_CONSISTENCY, '--contract', cp, '--md', q3], must_fail=4)
+
+    # ---- P3：契约填了版式来源，md 必须有「> 版式来源：…」一行 ----
+    c7 = dict(c)
+    c7['boards'] = dict(c['boards'], style_source='16.3 电阻样板稿，取版式')
+    p7 = os.path.join(d, 'style-source.json')
+    open(p7, 'w', encoding='utf-8').write(json.dumps(c7, ensure_ascii=False))
+    expect('负样本：契约填了版式来源、md 没写', 1,
+           [sys.executable, CHECK_CONSISTENCY, '--contract', p7, '--md', mp], must_fail=7)
+    q7d = os.path.join(d, 'style-source-ok')
+    os.makedirs(q7d, exist_ok=True)
+    q7 = os.path.join(q7d, base)
+    open(q7, 'w', encoding='utf-8').write(md.replace(
+        '## 板书设计', '> 版式来源：16.3 电阻样板稿，取版式' + NL + NL + '## 板书设计', 1))
+    expect('正样本：md 写了版式来源，与契约一致', 0,
+           [sys.executable, CHECK_CONSISTENCY, '--contract', p7, '--md', q7])
 
 def _ok(tag, cond, detail=''):
     """进程内断言：与 expect() 同样的 [OK ]/[BAD] 口径。"""
@@ -659,6 +687,19 @@ def render_tests(root):
     # ⑩ 记号行里的 | 不算表格（{框|R＝U/I} 别被当成表格判错）
     _ok('渲染⑩ {框|…} 里的竖线不当成表格',
         cl.board_unit_stats(['{框|R＝U/I}']) == (1, []))
+
+    # ⑪ 行首「+ 」＝课堂当场生成：解析时打标记，标记不进板面
+    blk2 = bb.parse_block(['## 左板', '+ 判据：导体本身的性质', '- 一、电阻'])
+    _ok('渲染⑪ 行首 + 解析成课堂当场生成、标记不进板面',
+        blk2['panels'][0]['gen'] == [True, False]
+        and blk2['panels'][0]['lines'] == ['判据：导体本身的性质', '一、电阻'])
+
+    # ⑫ 有 + 与没 + 的板书图不是同一张（淡黄竖条真的画上去了）
+    g1 = F + 'board' + NL + '## 左板' + NL + '+ 判据：导体本身的性质' + NL + F + NL
+    g0 = F + 'board' + NL + '## 左板' + NL + '判据：导体本身的性质' + NL + F + NL
+    h1 = hashlib.sha256(open(render('gen1', g1), 'rb').read()).hexdigest()
+    h0 = hashlib.sha256(open(render('gen0', g0), 'rb').read()).hexdigest()
+    _ok('渲染⑫ 带 + 的板书图画了淡黄竖条（与不带 + 的不同）', h1 != h0)
 
 
 def main():

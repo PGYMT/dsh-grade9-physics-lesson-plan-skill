@@ -6,14 +6,15 @@
   python3 scripts/check_consistency.py --contract 课时契约.json --md 详案.md
   python3 scripts/check_consistency.py --contract 课时契约.json --md 详案.md --fix
 
-6 项（每项带连续「第N项」；一次报全，不报一处修一处）：
+7 项（每项带连续「第N项」；一次报全，不报一处修一处）：
   1. 环节标题数：md 里「### 环节…」的条数＝契约 segments 条数；
   2. 各环节用时逐条：md 每个环节标题里的（约N分钟）＝契约里该环节的 minutes；
-  3. 板书块数：md 里「## 板N」的块数＝契约 boards.count；
+  3. 板书块数：md 里「## 板N」或「## 左板／## 右板」的块数＝契约 boards.count；
   4. 参考资料覆盖甲/乙级来源：契约里 level 为甲或乙的每条来源，其 url 必须出现在
      md「九、参考资料」一节（只覆盖契约里最高两级，丙级不强制）；
   5. 文件名与 id 匹配：md 文件名＝section＋title＋"-"＋version_tag；
-  6. 必做实验（仅当契约填了 curriculum_ref.required_experiment）：segments 里要有 kind 为「实验」的环节。
+  6. 必做实验（仅当契约填了 curriculum_ref.required_experiment）：segments 里要有 kind 为「实验」的环节；
+  7. 版式来源（仅当契约填了 boards.style_source）：md 里要有「> 版式来源：…」一行且写着同一出处。
 
 硬规则：以契约为准改 md，不允许改契约迁就 md。
 
@@ -34,7 +35,7 @@ import sys
 HEAD_RE = re.compile(r'^###\s*(环节[^\n]*)$', re.M)
 MINUTES_RE = re.compile(r'约\s*([0-9]+)\s*分钟')
 BOARD_RE = re.compile(r'^[ ]*' + chr(96) * 3 + r'board[ ]*$', re.M)
-BOARD_UNIT_RE = re.compile(r'^##\s*板([0-9N]+)', re.M)
+BOARD_UNIT_RE = re.compile(r'^##\s*(?:板\s*([0-9N]+)|([左右])板)', re.M)
 REF_HEAD_RE = re.compile(r'^##\s*九、参考资料', re.M)
 
 NO = [0]
@@ -112,14 +113,15 @@ def md_sections(md):
 
 def main():
     ap = argparse.ArgumentParser(
-        description='契约与正文一致性校验（L2）：6 项，写完正文后跑。',
+        description='契约与正文一致性校验（L2）：7 项，写完正文后跑。',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''字段词表与最小示例见 check_contract.py --help；
 契约完整定义见 schemas/lesson.schema.json，样例见 schemas/example.lesson.json。
 
 对照规则：
   md「### 环节一 情境导入（约5分钟）」 ←→ segments[0].name="情境导入"、minutes=5
-  md「## 板1（主板）」              ←→ boards.count
+  md「## 左板」/「## 右板」(旧「## 板1」) ←→ boards.count
+  md「> 版式来源：…」              ←→ boards.style_source（契约填了才判）
   md「## 九、参考资料」里的链接       ←→ sources 里 level 为甲/乙的 url
   md 文件名                        ←→ section+title+"-"+version_tag
   md「### 环节四 …（实验）」        ←→ segments 里有 kind=实验（契约填了 curriculum_ref.required_experiment 时才判）
@@ -137,14 +139,14 @@ def main():
             d = json.load(f)
     except Exception as e:
         print('  [FAIL] 契约读不了：%s（%s）' % (ns.contract, e))
-        print('\n结果：6 项，失败 1 项')
+        print('\n结果：7 项，失败 1 项')
         return 1
     try:
         with open(ns.md, encoding='utf-8') as f:
             md = f.read()
     except Exception as e:
         print('  [FAIL] 详案读不了：%s（%s）' % (ns.md, e))
-        print('\n结果：6 项，失败 1 项')
+        print('\n结果：7 项，失败 1 项')
         return 1
 
     segs = [s for s in d.get('segments', []) if isinstance(s, dict)]
@@ -181,7 +183,7 @@ def main():
     item('各环节用时逐条', not bad2, '；'.join(bad2[:5]) + ('…' if len(bad2) > 5 else '')
          if bad2 else '每个环节的名称与用时都对得上')
 
-    units = [m.group(1) for m in BOARD_UNIT_RE.finditer(md)]
+    units = [m.group(1) or m.group(2) for m in BOARD_UNIT_RE.finditer(md)]
     fences = len(BOARD_RE.findall(md))
     want_cnt = (d.get('boards') or {}).get('count')
     ok3 = (len(units) == want_cnt) if units else (fences == want_cnt)
@@ -214,6 +216,23 @@ def main():
         NO[0] += 1
         RESULTS.append(('必做实验环节', True))
         print('  [SKIP] 第6项 必做实验环节  契约没填 curriculum_ref.required_experiment')
+
+    ssrc = str(((d.get('boards') or {}).get('style_source')) or '').strip()
+    if ssrc:
+        got = None
+        for ln in md.split('\n'):
+            m = re.match(r'^>\s*版式来源[:：]\s*(.+?)\s*$', ln.strip())
+            if m:
+                got = m.group(1)
+                break
+        ok7 = bool(got) and (ssrc in got or got in ssrc)
+        item('版式来源', ok7,
+             '契约 style_source=%s，md %s' % (brief(ssrc),
+                                            ('写的是「%s」' % got) if got else '没有「> 版式来源：…」这一行'))
+    else:
+        NO[0] += 1
+        RESULTS.append(('版式来源', True))
+        print('  [SKIP] 第7项 版式来源  契约没填 boards.style_source')
 
     failed = [n for n, ok in RESULTS if not ok]
     print('\n结果：%d 项，失败 %d 项' % (len(RESULTS), len(failed)))
