@@ -8,7 +8,7 @@
 失败项（影响退出码；每项在输出里带连续「第N项」，供自检回报引用）：
   1. board 块数 1—2（## 板N／左板／右板 与 board 围栏数双测）；
   2. 每块实际书写行 ≤8（块＝「## 板N」或「## 左板／右板」；围栏内没有板标题时整个围栏算一块）；
-     折算：图位「[图：说明]」算 3 行、整张表格算 1 行；顺带查表格与图位的格式（整表 ≤6 行、每列 ≤8 字、行首尾要有 |、图位要写说明）；
+     折算：图位「[图：说明]」算 3 行、整张表格按它自己的行数算；顺带查表格与图位的格式（整表 ≤6 行、每列 ≤8 字、行首尾要有 |、图位要写说明）；
   3. docx 内嵌 board-*.png 数＝md board 块数，且至少 1 张；
   4. 本次未向 04-教案/<章节>/板书图/ 新增板书图；
   5. docx 末尾生成信息块存在，版本串＝SKILL.md frontmatter（读不到 SKILL 时跳过）；
@@ -115,6 +115,11 @@ CELL_MAX = 8
 TABLE_MAX = 6
 
 
+def is_table_line(s):
+    """表格行：含 | 且不是记号行（{红|…}／{框|…} 这类带花括号的行不算表格）。"""
+    return '|' in s and '{' not in s and '}' not in s and not s.startswith('[图')
+
+
 def table_problems(rows):
     """表格格式：行首尾要有 |、整表 ≤6 行、列数一致、每列 ≤8 字。"""
     out = []
@@ -142,7 +147,7 @@ def table_problems(rows):
 
 
 def board_unit_stats(lines):
-    """返回 (折算行数, 问题列表)：图位算 3 行、整张表格算 1 行、普通行算 1 行。"""
+    """返回 (折算行数, 问题列表)：图位算 3 行、表格按自身行数、普通行算 1 行。"""
     weight, errs, i, n = 0, [], 0, len(lines)
     while i < n:
         s = lines[i].strip()
@@ -154,13 +159,13 @@ def board_unit_stats(lines):
                 errs.append('图位要写成 [图：说明]：%s' % s)
             i += 1
             continue
-        if '|' in s:
+        if is_table_line(s):
             rows = []
-            while i < n and '|' in lines[i]:
+            while i < n and is_table_line(lines[i].strip()):
                 rows.append(lines[i].strip())
                 i += 1
             errs.extend(table_problems(rows))
-            weight += 1
+            weight += len(rows)
             continue
         weight += 1
         i += 1
@@ -327,7 +332,7 @@ def main():
     detail = '最多 %d 行／共 %d 块' % (worst, len(stats))
     if errs:
         detail += '；' + '；'.join(errs[:3])
-    item('每块实际书写行 <=8（图位算3行、整表算1行）', worst <= 8 and not errs, detail)
+    item('每块实际书写行 <=8（图位算3行、表格按行数计）', worst <= 8 and not errs, detail)
     blank = heads - len(units)
     if blank > 0:
         warn('右板留空', '有 %d 块只写了标题、没写内容；右板留空是允许的，确认是有意为之' % blank)
