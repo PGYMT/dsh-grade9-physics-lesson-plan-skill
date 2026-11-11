@@ -88,7 +88,7 @@ def build_ws(root, empty=()):
     """写一个最小工作区；empty 里的类型写成空壳文件（正文为空）。返回 ws、章节、各类文件路径。"""
     ws = os.path.join(root, 'ws')
     ch = '第十六章-电压 电阻'
-    base = os.path.join(ws, '08-网络资源')
+    base = os.path.join(ws, '教学/网络资源')
     for d in ['优秀教案/' + ch + '/md文件', '优秀课件PPT/' + ch + '/md文件',
               '同步优学/九年级上册/' + ch + '/md文件', '板书设计参考/md文件']:
         os.makedirs(os.path.join(base, d), exist_ok=True)
@@ -161,7 +161,7 @@ def research_tests(root):
     print('===== check_research.py =====')
     ws, ch, files = build_ws(root)
     sec = '16.9测试节'
-    sd = os.path.join(ws, '08-网络资源', '优秀教案', ch, 'md文件')
+    sd = os.path.join(ws, '教学/网络资源', '优秀教案', ch, 'md文件')
     good = os.path.join(sd, '16.9测试节-调研摘要-20261011.md')
     base = [sys.executable, CHECK_RESEARCH, '--workspace', ws, '--chapter', ch, '--section', sec]
     open(good, 'w', encoding='utf-8').write(summary())
@@ -190,7 +190,7 @@ def research_tests(root):
 
     crossmap = os.path.join(sd, '16.9测试节-调研摘要-20261011-crossmap.md')
     open(crossmap, 'w', encoding='utf-8').write(summary(mapping=NAMES['课件'][0]))
-    expect('正样本：来源映射裸文件名在 08-网络资源 子目录', 0,
+    expect('正样本：来源映射裸文件名在 教学/网络资源 子目录', 0,
            base + ['--summary', crossmap, '--lesson', lesson_ref])
 
     noref = os.path.join(sd, '16.9测试节-1课时-仅多媒体-详案-无参考.md')
@@ -215,12 +215,12 @@ def research_tests(root):
     open(good, 'w', encoding='utf-8').write(summary())
     expect('负样本：教案来源不可溯源', 1, base + ['--lesson', lesson])
 
-    # D2 回归：教材「九、参考资料」写 08-网络资源/ 的实存路径（章节目录名含空格）应 PASS
-    real = '08-网络资源/优秀教案/%s/md文件/%s' % (ch, os.path.basename(files['教案'][0]))
+    # D2 回归：教材「九、参考资料」写 教学/网络资源/ 的实存路径（章节目录名含空格）应 PASS
+    real = '教学/网络资源/优秀教案/%s/md文件/%s' % (ch, os.path.basename(files['教案'][0]))
     open(lesson, 'w', encoding='utf-8').write('九、参考资料' + NL + real + NL)
-    expect('正样本：教案引用 08-网络资源 实存路径（章节名含空格）', 0, base + ['--lesson', lesson])
-    open(lesson, 'w', encoding='utf-8').write('九、参考资料' + NL + '08-网络资源/优秀教案/%s/md文件/不存在的文件.md' % ch + NL)
-    expect('负样本：教案引用 08-网络资源 不存在路径', 1, base + ['--lesson', lesson])
+    expect('正样本：教案引用 教学/网络资源 实存路径（章节名含空格）', 0, base + ['--lesson', lesson])
+    open(lesson, 'w', encoding='utf-8').write('九、参考资料' + NL + '教学/网络资源/优秀教案/%s/md文件/不存在的文件.md' % ch + NL)
+    expect('负样本：教案引用 教学/网络资源 不存在路径', 1, base + ['--lesson', lesson])
 
     saved = {}
     for p in files['教案']:
@@ -281,7 +281,7 @@ def lesson_tests(root, ws):
     if not os.path.isfile(build):
         print('[SKIP] 找不到 build_docx.py，跳过 check_lesson 测试：' + build)
         return
-    ch_dir = os.path.join(root, '04-教案', '测试章')
+    ch_dir = os.path.join(root, '教学/教案', '测试章')
     mdd = os.path.join(ch_dir, 'md文件')
     os.makedirs(mdd, exist_ok=True)
     name = '16.9测试节-1课时-仅多媒体-详案'
@@ -364,7 +364,7 @@ def lesson_tests(root, ws):
     rewrite_docx(docx, d5, doc_repl=lambda s: s.replace('ProvenanceNote', 'XrovenanceNote'))
     run('负样本：版本块缺失', 1, m3, d5, must_fail=5)
 
-    warn_ch = os.path.join(root, '04-教案', '测试章-警告')
+    warn_ch = os.path.join(root, '教学/教案', '测试章-警告')
     warn_mdd = os.path.join(warn_ch, 'md文件')
     os.makedirs(warn_mdd, exist_ok=True)
     warn_md = os.path.join(warn_mdd, name + '.md')
@@ -704,7 +704,7 @@ def render_tests(root):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--workspace', default=os.environ.get('JIAOAN_WORKSPACE', '/root/dsh-workspace/工作文件'))
+    ap.add_argument('--workspace', default=os.environ.get('JIAOAN_WORKSPACE', '/root/dsh-workspace/DSH工作台'))
     a = ap.parse_args()
     root = tempfile.mkdtemp(prefix='jiaoan_tests_')
     try:

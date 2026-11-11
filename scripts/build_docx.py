@@ -43,7 +43,7 @@ import sys
 import zipfile
 from xml.sax.saxutils import escape
 
-DEFAULT_MD_DIR = "/root/dsh-workspace/工作文件/04-教案/第十五章-电流和电路/md文件"
+DEFAULT_MD_DIR = "/root/dsh-workspace/DSH工作台/教学/教案/第十五章-电流和电路/md文件"
 
 # ---------------------------------------------------------------- 样式表
 STYLES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

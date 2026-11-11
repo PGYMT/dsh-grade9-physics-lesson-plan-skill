@@ -1,13 +1,13 @@
 ---
 name: generate-9th-grade-physics-lesson-plan
-version: 9.4.1
+version: 9.5.0
 license: CC-BY-4.0
 description: Use when asked to generate or revise a Grade 9 physics lesson plan (九年级物理教案) from a Seewo .enbx, per the saved 教案生成要求, or to add pages to an .enbx (改课件/加页). Defaults to 40 min/period; outputs only the 详案/逐字稿 (Markdown + Word) for new and practice lessons. Research-first via the 教学资源取件手册, routes by entry (references/00-入口路由.md), runs check_contract.py + check_consistency.py + check_research.py + check_lesson.py before delivery; can add native-text pages (click-to-reveal answers) to an .enbx copy, original untouched. Not for 'how do I use this skill'.
 ---
 
 # 九年级物理教案生成技能
 
-> 版本：v9.4.1
+> 版本：v9.5.0
 > 本文件只是入口：触发、确认、流程、硬约束、索引。详细要求按第 5 节读取 references/，不要凭记忆生成。
 > 先读 references/00-入口路由.md：判入口、走主干、看失败分支都在那儿。
 
@@ -45,7 +45,7 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 |---|---|---|
 | 只有一个课题（“帮我备 15.2”） | A | 确认教材进度与课时划分（00 §2） |
 | 有原件：.enbx／教材 PDF 页／课件截图／旧教案电子稿 | B | 解包或识图，提取页序与要点（00 §3） |
-| 有旧教案要改（自己的 md／docx，或 04-教案 成品） | C | 读现状、列改动清单（00 §4） |
+| 有旧教案要改（自己的 md／docx，或 教学/教案 成品） | C | 读现状、列改动清单（00 §4） |
 | 要改课件／加页 | 改课件分支 | 读 06 §4 九步（本文件 §3.3） |
 
 老师只说「15.2 的重点是什么」「这页讲什么」「怎么用这个技能」，按 00 §0.2 只回答、不启动流程，并说明一句「这次只回答，不开始备课」。
@@ -54,11 +54,11 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 
 1. **参数卡**：§2 的 8 项一次问清（档案里已有的不问），缺哪项问哪项。
 2. **备课调研（必做，先查后用）**
-   2.1 先查本地存档：先读 08-网络资源/离线素材包-人教版九年级物理/按课时索引.md（能覆盖本课就不再联网），再读 08-网络资源/ 对应章节目录与《备课缺口表》，记下已有/还缺。
+   2.1 先查本地存档：先读 教学/网络资源/离线素材包-人教版九年级物理/按课时索引.md（能覆盖本课就不再联网），再读 教学/网络资源/ 对应章节目录与《备课缺口表》，记下已有/还缺。
    2.2 先走《取件手册》§0 省事通道：登录即可免费下载（教师之家／希沃课件库／国家平台／学科网免费池等）；没有再按第 1—9 章顺序自己抓：官方平台只查本地导出件（始终算 LX，不自动请求）→ 商业精品 → 免费可直抓。
    2.3 份数目标（去重后）：教案 3—5、课件 3—5、练习 3—5、导学案 ≥2、板书参考 ≥2；视频可选；每类至少 1 份官方平台人工导出件或带「精品/获奖」标签；本课确实不适用的类在《缺口表》标「不适用」。
    2.4 降级链：每站每栏目最多试 1 次；遇 403／验证码／登录墙／付费墙立刻换替代源，不重试、不硬闯。
-   2.5 取件落地：能直抓的存 08-网络资源/ 对应目录（原件优先；快照存 md文件/，写明来源链接＋抓取日期＋获取程度）；先按「同一课题 docx＋md 算 1 份」归并，再算 sha256 前 16 位去重；写盘前先跑 organize.py plan --dest。
+   2.5 取件落地：能直抓的存 教学/网络资源/ 对应目录（原件优先；快照存 md文件/，写明来源链接＋抓取日期＋获取程度）；先按「同一课题 docx＋md 算 1 份」归并，再算 sha256 前 16 位去重；写盘前先跑 organize.py plan --dest。
    2.6 质量判断：先过可用性门槛（5 条＋正文底线），再按 references/07 分类型打分（甲/乙/丙）；有效数（甲＋乙）低于下限 → 生成《人工取件清单》请你获取；其余继续。
    2.7 出七维度借鉴清单（各条带来源链接＋抓取日期＋采用/规避）与「分课时安排表」，**先出安排表、后出摘要**；摘要按 08 §5 规格落盘。
    2.8 跑调研校验：python3 ~/.dsh/skills/generate-9th-grade-physics-lesson-plan/scripts/check_research.py --workspace "<工作区>" --chapter "<章节>" --section "<节号+节名>" --summary "<摘要路径>"；把输出连同 2.7 的摘要一起给用户确认；**确认之后才进第 5 步**——摘要没过目就动笔，方向错了整篇要重写。
@@ -130,4 +130,4 @@ description: Use when asked to generate or revise a Grade 9 physics lesson plan 
 - 运行入口：~/.dsh/skills/generate-9th-grade-physics-lesson-plan，是指向权威源的软链，勿直接改。
 - DSH 仓库 .agents/skills/ 下的旧副本已移除，别再往那儿放。
 - 改完按 04 校验，并跑 sync_checklist.py 与 skill_link.py verify。
-- 课件修改脚本在 06-工具与提示词/教程/（build_enbx_native_pages.py、enbx_verify2.ps1、enbx_shot_ocr.py、expected_pages.json、extract_enbx.py、extract_video_frames.py），索引见 06 §7。
+- 课件修改脚本在 工具与方案/教程与脚本/（build_enbx_native_pages.py、enbx_verify2.ps1、enbx_shot_ocr.py、expected_pages.json、extract_enbx.py、extract_video_frames.py），索引见 06 §7。

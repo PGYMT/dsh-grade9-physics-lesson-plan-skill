@@ -10,7 +10,7 @@
   2. 每块实际书写行 ≤8（块＝「## 板N」或「## 左板／右板」；围栏内没有板标题时整个围栏算一块）；
      折算：图位「[图：说明]」算 3 行、整张表格按它自己的行数算；顺带查表格与图位的格式（整表 ≤6 行、每列 ≤8 字、行首尾要有 |、图位要写说明）；
   3. docx 内嵌 board-*.png 数＝md board 块数，且至少 1 张；
-  4. 本次未向 04-教案/<章节>/板书图/ 新增板书图；
+  4. 本次未向 教学/教案/<章节>/板书图/ 新增板书图；
   5. docx 末尾生成信息块存在，版本串＝SKILL.md frontmatter（读不到 SKILL 时跳过）；
   6. 〔板书｜…〕 段落为红色样式，docx 用数不少于 md 真实旁批数；多出只提示；序号写成占位符 x（板1·x）判失败；
   7. 文件名符合现行命名规则。
@@ -199,7 +199,11 @@ def board_notes(md):
 
 
 def find_chapter_dir(md_path):
+    """章节目录：新区 教学/教案/<章节>（连续两段）或旧区 04-教案/<章节>。"""
     parts = os.path.abspath(md_path).split(os.sep)
+    for i in range(len(parts) - 2):
+        if parts[i] == '教学' and parts[i + 1] == '教案':
+            return os.sep.join(parts[:i + 3])
     for i, seg in enumerate(parts):
         if seg == '04-教案' and i + 1 < len(parts):
             return os.sep.join(parts[:i + 2])

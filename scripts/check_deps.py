@@ -24,15 +24,15 @@ SKILL_SCRIPTS = {
 
 # 工作区脚本清单：相对路径 -> 用途
 WS_SCRIPTS = {
-    '06-工具与提示词/教程/build_board_png.py': 'board 围栏渲染板书 PNG（技能 scripts/build_board_png.py 的逐字投影）',
-    '06-工具与提示词/教程/extract_enbx.py': '解包 .enbx：文本/动画/素材/视频信息',
-    '06-工具与提示词/教程/build_lesson_prompt.py': '由 01+02+06 生成工作区提示词与 03/05 可读版',
-    '06-工具与提示词/教程/extract_video_frames.py': '课件视频抽帧与封面',
-    '06-工具与提示词/教程/build_enbx_native_pages.py': '给 .enbx 副本加原生页',
-    '06-工具与提示词/教程/enbx_add_pages.py': '通用 .enbx 加页：中间插页 + 字号/高度自检',
-    '06-工具与提示词/教程/enbx_verify2.ps1': 'Windows 侧打开/跳页/截图',
-    '06-工具与提示词/教程/enbx_shot_ocr.py': '截图 OCR 机器层比对',
-    '06-工具与提示词/教程/expected_pages.json': '课件验证预期清单',
+    '工具与方案/教程与脚本/build_board_png.py': 'board 围栏渲染板书 PNG（技能 scripts/build_board_png.py 的逐字投影）',
+    '工具与方案/教程与脚本/extract_enbx.py': '解包 .enbx：文本/动画/素材/视频信息',
+    '工具与方案/教程与脚本/build_lesson_prompt.py': '由 01+02+06 生成工作区提示词与 03/05 可读版',
+    '工具与方案/教程与脚本/extract_video_frames.py': '课件视频抽帧与封面',
+    '工具与方案/教程与脚本/build_enbx_native_pages.py': '给 .enbx 副本加原生页',
+    '工具与方案/教程与脚本/enbx_add_pages.py': '通用 .enbx 加页：中间插页 + 字号/高度自检',
+    '工具与方案/教程与脚本/enbx_verify2.ps1': 'Windows 侧打开/跳页/截图',
+    '工具与方案/教程与脚本/enbx_shot_ocr.py': '截图 OCR 机器层比对',
+    '工具与方案/教程与脚本/expected_pages.json': '课件验证预期清单',
 }
 
 def ok(m, extra=''): print('  [OK] ' + m + (('  ' + extra) if extra else ''))
@@ -50,7 +50,7 @@ def pillow_state(ws):
     except Exception:
         pass
     tag = 'cp%d%d' % sys.version_info[:2]
-    pats = [os.path.join(ws, '06-工具与提示词/教程/vendor', 'pillow-*-%s-*.whl' % tag),
+    pats = [os.path.join(ws, '工具与方案/教程与脚本/vendor', 'pillow-*-%s-*.whl' % tag),
             os.path.join(SKILL_DIR, 'scripts', 'vendor', 'pillow-*-%s-*.whl' % tag)]
     for p in pats:
         for f in glob.glob(p):
@@ -59,7 +59,7 @@ def pillow_state(ws):
         hint = 'uv pip install pillow'
     else:
         hint = 'python3 -m pip install pillow'
-    return False, hint + '；或把匹配 cp3NN 的 wheel 放进工作区 06-工具与提示词/教程/vendor/'
+    return False, hint + '；或把匹配 cp3NN 的 wheel 放进工作区 工具与方案/教程与脚本/vendor/'
 
 def font_paths():
     paths = []

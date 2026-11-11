@@ -11,7 +11,7 @@
   2. 七维度每条都带 http(s) 链接与抓取日期（标「在线来源，未落盘」也照样要链接与日期）；
   3. 摘要含「哈希清单」块；
   4. 五类去重后达标；份数统计的来源类型只能是「官方」或「精品」（逐份判定可写更宽）；
-  5. 摘要「已落盘」数与 08-网络资源/ 实际文件对账（实际少于摘要才 FAIL）；
+  5. 摘要「已落盘」数与 教学/网络资源/ 实际文件对账（实际少于摘要才 FAIL）；
   6. 传了 --lesson 时，教案必须有「九、参考资料」，且每个来源都能在「来源映射」里落到本地文件或标「在线来源，未落盘」；映射里的本地文件必须存在；
   7. 摘要含「逐份判定」块，覆盖全部可用件（=正文达标文件），每行 >=9 字段，等级取 甲/乙/丙/—；
   8. 「可用」数不超正文达标数；有效数（判定行中等级为甲或乙的件数）低于该类下限时，必须已出《人工取件清单》。
@@ -132,7 +132,7 @@ def parse_date(s):
 
 
 def auto_summary(ws, chapter, section):
-    d = os.path.join(ws, '08-网络资源', '优秀教案', chapter, 'md文件')
+    d = os.path.join(ws, '教学/网络资源', '优秀教案', chapter, 'md文件')
     if not os.path.isdir(d):
         return None, []
     target = norm_section(section)
@@ -188,11 +188,11 @@ def count_resources(root, sec_no, kind=None):
 
 def resource_roots(ws, chapter):
     return {
-        '教案': (os.path.join(ws, '08-网络资源', '优秀教案', chapter), '教案'),
-        '课件': (os.path.join(ws, '08-网络资源', '优秀课件PPT', chapter), '课件'),
-        '练习': (os.path.join(ws, '08-网络资源', '同步优学', '九年级上册', chapter), None),
-        '导学案': (os.path.join(ws, '08-网络资源', '优秀教案', chapter), '导学案'),
-        '板书参考': (os.path.join(ws, '08-网络资源', '板书设计参考'), None),
+        '教案': (os.path.join(ws, '教学/网络资源', '优秀教案', chapter), '教案'),
+        '课件': (os.path.join(ws, '教学/网络资源', '优秀课件PPT', chapter), '课件'),
+        '练习': (os.path.join(ws, '教学/网络资源', '同步优学', '九年级上册', chapter), None),
+        '导学案': (os.path.join(ws, '教学/网络资源', '优秀教案', chapter), '导学案'),
+        '板书参考': (os.path.join(ws, '教学/网络资源', '板书设计参考'), None),
     }
 
 
@@ -258,7 +258,7 @@ def parse_judgements(lines):
 
 
 def find_manual_list(ws, section):
-    root = os.path.join(ws, '08-网络资源')
+    root = os.path.join(ws, '教学/网络资源')
     for p in walk_files(root):
         b = os.path.basename(p)
         if MANUAL_LIST in b and norm_section(b).startswith(norm_section(section)):
@@ -357,7 +357,7 @@ def main():
         claimed = to_int(parts[0])
         if actual.get(t, 0) < claimed:
             bad5.append('%s(摘要%d>实际%d)' % (t, claimed, actual.get(t, 0)))
-    item('已落盘与 08-网络资源/ 对账', not bad5, '／'.join(bad5))
+    item('已落盘与 教学/网络资源/ 对账', not bad5, '／'.join(bad5))
 
     print('== 教案来源可溯源 ==')
     if not a.lesson or not os.path.isfile(a.lesson):
@@ -377,14 +377,14 @@ def main():
                 if any(k == u and '未落盘' in v for k, v in mapping.items()):
                     continue
                 bad6.append(u)
-            for lp in re.findall(r'08-网络资源/[^\n)）>」|]+?\.(?:md|docx|pdf|pptx|ppt|txt|doc)', refs):
+            for lp in re.findall(r'教学/网络资源/[^\n)）>」|]+?\.(?:md|docx|pdf|pptx|ppt|txt|doc)', refs):
                 if os.path.exists(os.path.join(ws, lp)):
                     continue
                 if os.path.basename(lp) in ' '.join(mapping.values()):
                     continue
                 bad6.append(lp)
             res_files = []
-            for rt, ds, fs in os.walk(os.path.join(ws, '08-网络资源')):
+            for rt, ds, fs in os.walk(os.path.join(ws, '教学/网络资源')):
                 for f in fs:
                     res_files.append(os.path.join(rt, f))
             for v in mapping.values():
@@ -398,7 +398,7 @@ def main():
                     cands = [part,
                              os.path.join(os.path.dirname(summary), part),
                              os.path.join(ws, part),
-                             os.path.join(ws, '08-网络资源', part)]
+                             os.path.join(ws, '教学/网络资源', part)]
                     if any(os.path.exists(c) for c in cands):
                         continue
                     if any(p.replace('\\', '/').endswith('/' + np) for p in res_files):
@@ -457,7 +457,7 @@ def main():
     warn('正文未达底线的文件（按不可用计）', '，'.join(sorted(set(shells))) if shells else '无')
     if manual:
         warn('已找到《人工取件清单》', manual)
-    gap = os.path.join(ws, '08-网络资源', '备课缺口表.md')
+    gap = os.path.join(ws, '教学/网络资源', '备课缺口表.md')
     if os.path.isfile(gap):
         sd = parse_date(os.path.basename(summary)) or ''
         found = '—'

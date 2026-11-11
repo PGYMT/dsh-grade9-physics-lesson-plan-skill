@@ -24,10 +24,10 @@ YELLOW = (255, 214, 102)
 
 
 def _vendor_dirs():
-    """Pillow wheel 候选目录：先本脚本旁 vendor/，再旧的 06-工具与提示词/教程/vendor。"""
+    """Pillow wheel 候选目录：先本脚本旁 vendor/，再旧的 工具与方案/教程与脚本/vendor。"""
     cands = [os.path.join(HERE, "vendor")]
     legacy = os.environ.get("JIAOAN_VENDOR_DIR") or \
-        "/root/dsh-workspace/工作文件/06-工具与提示词/教程/vendor"
+        "/root/dsh-workspace/DSH工作台/工具与方案/教程与脚本/vendor"
     if legacy not in cands:
         cands.append(legacy)
     return cands

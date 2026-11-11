@@ -1,13 +1,13 @@
 # dsh-grade9-physics-lesson-plan-skill
 
-> 版本：v9.4.1
+> 版本：v9.5.0
 
 九年级物理教案生成 Skill，基于希沃白板 `.enbx` 或类似课件生成/修改教案。本仓库是技能文件的**权威源**（`SKILL.md` + `references/01–07` + 本说明）；运行入口 `~/.dsh/skills/generate-9th-grade-physics-lesson-plan` 是指向本仓库本地克隆的软链。
 
 ## 功能特点
 
 - 只出详案/逐字稿（1 份 Markdown 工作稿＋1 份 Word 上课稿），默认每课时 40 分钟。
-- 备课调研必做：先查本地存档（含 08-网络资源/离线素材包-人教版九年级物理/，按课时索引能覆盖就不再联网）与《备课缺口表》，先走《教学资源取件手册》§0 省事通道（登录免费下载），再按九章顺序自己抓，按《网络资源参考价值评价维度》逐份过门槛＋打分（甲/乙/丙），有效数不足才出《人工取件清单》；摘要先给用户确认，可用内容落地 08-网络资源/；跑 scripts/check_research.py 才进写稿。
+- 备课调研必做：先查本地存档（含 教学/网络资源/离线素材包-人教版九年级物理/，按课时索引能覆盖就不再联网）与《备课缺口表》，先走《教学资源取件手册》§0 省事通道（登录免费下载），再按九章顺序自己抓，按《网络资源参考价值评价维度》逐份过门槛＋打分（甲/乙/丙），有效数不足才出《人工取件清单》；摘要先给用户确认，可用内容落地 教学/网络资源/；跑 scripts/check_research.py 才进写稿。
 - 板书成品化：左板＝主干、右板＝演算与错例（可空），共 1—2 块、每块 ≤8 行、每行 ≤14 字；md 用 board 围栏（`## 左板`／`## 右板`），docx 插入渲染好的板书图。
 - 教学目标按核心素养四维度、学生视角、可测可评；重难点就地写；过渡语服务真实逻辑关系。
 - 可对 .enbx 副本加原生页（答案点击出现），原件逐字节不动；可修订已有教案。
@@ -47,8 +47,8 @@
   - `python3 /root/.dsh/skills/auto-organize-work-files/scripts/sync_checklist.py --apply`
   - `python3 scripts/check_structure.py`
   - `python3 scripts/tests/run_tests.py`
-  - 重新生成工作区生成物：`python3 "/root/dsh-workspace/工作文件/06-工具与提示词/教程/build_lesson_prompt.py"`
-  - 课件修改脚本在 `06-工具与提示词/教程/`（build_enbx_native_pages.py、enbx_verify2.ps1、enbx_shot_ocr.py、expected_pages.json、extract_video_frames.py）
+  - 重新生成工作区生成物：`python3 "/root/dsh-workspace/DSH工作台/工具与方案/教程与脚本/build_lesson_prompt.py"`
+  - 课件修改脚本在 `工具与方案/教程与脚本/`（build_enbx_native_pages.py、enbx_verify2.ps1、enbx_shot_ocr.py、expected_pages.json、extract_video_frames.py）
   - 依赖自检与分发同步：`python3 scripts/check_deps.py --sync-dist`
 - 详细流程见 `references/04-技能维护规范.md`；与整理技能的分工见其中的第 5 节。
 
@@ -58,7 +58,7 @@
 
 - v8.18.1：第二批收尾——v9 改为显式参数并新增 --help/--dry-run，check_deps 支持 JIAOAN_WORKSPACE/WSL_WINDOWS_ROOT/DSH_HOME 与 PowerShell 自动查找，05 标题去重，03 练习课命名统一，02/01/SKILL 课时长度与 Markdown-only 例外写清，07 补板书关键维，04 补 lint/selftest 命令与 plan --update 口径，README/04 补 check_lesson 9 失败项。
 
-- v8.18.0：结构审计修复——check_lesson 要求板书 1—2 块并核对内嵌图与真实旁批，check_research 兼容日期/全角竖线/来源类型并在 08-网络资源/ 递归查来源，check_structure 新增正文交叉引用检查，check_deps 安装后复检，run_tests 扩为 35 条；文档同步离线素材包与格式口径。
+- v8.18.0：结构审计修复——check_lesson 要求板书 1—2 块并核对内嵌图与真实旁批，check_research 兼容日期/全角竖线/来源类型并在 教学/网络资源/ 递归查来源，check_structure 新增正文交叉引用检查，check_deps 安装后复检，run_tests 扩为 35 条；文档同步离线素材包与格式口径。
 
 - v8.17.0：17.1 六轮改稿复盘——引用与结论三问、学生预设两条、提问三检、术语时机、同课时多版本、修订三查留档、改前通用性检查，并给 check_lesson 加用时求和与 md/docx 时间戳校验。
 

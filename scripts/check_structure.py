@@ -28,7 +28,7 @@ import re
 import sys
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_WS = '/root/dsh-workspace/工作文件'
+DEFAULT_WS = '/root/dsh-workspace/DSH工作台'
 # references/ 下按「两位数字-名字.md」自动发现，新增 00、08、09 时无需改脚本。
 # 排除 *.local.md（本地私人清单，不入库）与历史版本/（旧档）。
 REF_NAME_RE = re.compile(r'^[0-9]{2}-[^/]+\.md$')
@@ -288,9 +288,9 @@ def main():
     check('SKILL 索引目标都存在', not missing, ','.join(missing))
 
     print('== 4. 正文与工作区生成物一致 ==')
-    prompt_p = os.path.join(ws, '06-工具与提示词/提示词/md文件/教案生成要求提示词.md')
-    ref_p = os.path.join(ws, '06-工具与提示词/提示词/md文件/教学研究参考.md')
-    idx_p = os.path.join(ws, '08-网络资源/教学资源取件手册.md')
+    prompt_p = os.path.join(ws, '教学/教学提示词/md文件/教案生成要求提示词.md')
+    ref_p = os.path.join(ws, '教学/教学提示词/md文件/教学研究参考.md')
+    idx_p = os.path.join(ws, '教学/网络资源/教学资源取件手册.md')
     if os.path.isfile(prompt_p):
         pt = rd(prompt_p)
         check('提示词含 00/01/02/06 正文',
@@ -301,7 +301,7 @@ def main():
           os.path.isfile(ref_p) and rd(ref_p).rstrip() == rd(os.path.join(SKILL_DIR, 'references/03-教学研究参考.md')).rstrip())
     check('教学资源取件手册.md＝05',
           os.path.isfile(idx_p) and rd(idx_p).rstrip() == rd(os.path.join(SKILL_DIR, 'references/05-教学资源网站.md')).rstrip())
-    dim_p = os.path.join(ws, '08-网络资源/网络资源参考价值评价维度.md')
+    dim_p = os.path.join(ws, '教学/网络资源/网络资源参考价值评价维度.md')
     check('网络资源参考价值评价维度.md＝07',
           os.path.isfile(dim_p) and rd(dim_p).rstrip() == rd(os.path.join(SKILL_DIR, 'references/07-网络资源参考价值评价维度.md')).rstrip())
 
@@ -325,7 +325,7 @@ def main():
             check('dist 副本存在 ' + s, False, '缺失')
         else:
             check('dist 一致（技能内） ' + s, rd(src) == rd(dst))
-    proj = os.path.join(ws, '06-工具与提示词/教程/build_board_png.py')
+    proj = os.path.join(ws, '工具与方案/教程与脚本/build_board_png.py')
     mine = os.path.join(SKILL_DIR, 'scripts', 'build_board_png.py')
     check('build_board_png.py 工作区投影与技能内一致',
           os.path.isfile(proj) and os.path.isfile(mine) and rd(proj) == rd(mine),
